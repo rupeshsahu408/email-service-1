@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { randomBytes } from "crypto";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/db";
@@ -144,11 +144,15 @@ export async function POST(request: NextRequest) {
     meta: { username },
   });
 
-  void sendWelcomeEmail({
-    to: formatUserEmail(username),
-    name: welcomeDisplayName(username),
-    userId,
-  });
+  // Defer to `after()` so signup responds quickly but serverless still runs the send to completion
+  // (plain `void sendWelcomeEmail()` is often cut off when the invocation ends).
+  after(
+    sendWelcomeEmail({
+      to: formatUserEmail(username),
+      name: welcomeDisplayName(username),
+      userId,
+    })
+  );
 
   const res = NextResponse.json({
     recoveryKey,

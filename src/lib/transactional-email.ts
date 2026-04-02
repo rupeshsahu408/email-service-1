@@ -1,8 +1,13 @@
 import { logError, logInfo } from "@/lib/logger";
 import { isResendConfigured, sendOutboundMail } from "@/lib/resend-mail";
 
-/** Verified Sendora domain for transactional mail (Resend). */
+/** Default sender when `TRANSACTIONAL_EMAIL_FROM` env is not set (must match a verified domain in Resend). */
 export const TRANSACTIONAL_EMAIL_FROM = "Sendora <noreply@sendora.me>";
+
+function getWelcomeFromHeader(): string {
+  const raw = process.env.TRANSACTIONAL_EMAIL_FROM?.trim();
+  return raw || TRANSACTIONAL_EMAIL_FROM;
+}
 
 const WELCOME_REPLY_TO = "team@sendora.me";
 
@@ -150,7 +155,7 @@ export async function sendWelcomeEmail(params: {
 
   try {
     const { id } = await sendOutboundMail({
-      from: TRANSACTIONAL_EMAIL_FROM,
+      from: getWelcomeFromHeader(),
       replyTo: WELCOME_REPLY_TO,
       to,
       subject,
@@ -161,17 +166,23 @@ export async function sendWelcomeEmail(params: {
       template: kind,
       status: "success",
       to,
+      from: getWelcomeFromHeader().slice(0, 120),
       resendId: id,
       userId: params.userId ?? "",
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : "unknown";
+    const resendCode =
+      e instanceof Error && "resendCode" in e && typeof (e as { resendCode?: string }).resendCode === "string"
+        ? (e as { resendCode: string }).resendCode
+        : "";
     logError("transactional_email_failed", {
       template: kind,
       status: "error",
       to,
       userId: params.userId ?? "",
       message: message.slice(0, 500),
+      resendCode: resendCode || "",
     });
   }
 }
