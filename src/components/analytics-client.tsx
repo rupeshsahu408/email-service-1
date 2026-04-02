@@ -19,6 +19,32 @@ type AnalyticsApiResponse = {
   series: Array<{ day: string; received: number; sent: number }>;
   topContacts: Array<{ email: string; messageCount: number }>;
   mostActiveSender: { email: string; messageCount: number } | null;
+  response: {
+    averageReplyTimeMs: number | null;
+    fastestReplyTimeMs: number | null;
+    slowestReplyTimeMs: number | null;
+    totalPendingReplies: number;
+    hasReplySamples: boolean;
+  };
+  productivity: {
+    inboxClearedPercentage: number | null;
+    unreadEmailsCount: number;
+    repliedEmailsCount: number;
+    archivedOrTrashedEmailsCount: number;
+  };
+  actionInsights: {
+    waitingForReplyCount: number;
+    pendingOver24HoursCount: number;
+    pendingOver3DaysCount: number;
+    pendingEmails: Array<{
+      id: string;
+      threadId: string;
+      subject: string;
+      fromAddr: string;
+      createdAt: string;
+    }>;
+  };
+  phase2ComputedAt: string;
 };
 
 const RANGE_OPTIONS: { value: AnalyticsRange; label: string }[] = [
@@ -58,6 +84,59 @@ function SummaryCard({
       ) : null}
     </div>
   );
+}
+
+function SummaryCardText({
+  title,
+  value,
+  hint,
+}: {
+  title: string;
+  value: string;
+  hint?: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-[#e8e4f8] bg-white p-5 shadow-sm">
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-[#9896b4]">
+        {title}
+      </p>
+      <p className="mt-2 text-2xl sm:text-3xl font-bold tabular-nums text-[#1c1b33] break-words">
+        {value}
+      </p>
+      {hint ? (
+        <p className="mt-1 text-xs text-[#9896b4]">{hint}</p>
+      ) : null}
+    </div>
+  );
+}
+
+function formatDurationMs(ms: number | null): string {
+  if (ms === null || !Number.isFinite(ms) || ms < 0) return "—";
+  if (ms < 60_000) {
+    return `${Math.max(1, Math.round(ms / 1000))} sec`;
+  }
+  if (ms < 3600_000) {
+    return `${Math.max(1, Math.round(ms / 60_000))} min`;
+  }
+  const h = Math.floor(ms / 3600_000);
+  const m = Math.round((ms % 3600_000) / 60_000);
+  if (h >= 48) {
+    const d = Math.floor(h / 24);
+    const rh = h % 24;
+    return rh > 0 ? `${d}d ${rh}h` : `${d}d`;
+  }
+  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+}
+
+function formatRelativeWaiting(iso: string): string {
+  const t = new Date(iso).getTime();
+  if (!Number.isFinite(t)) return "—";
+  const diff = Date.now() - t;
+  if (diff < 60_000) return "Just now";
+  if (diff < 3600_000) return `${Math.floor(diff / 60_000)}m ago`;
+  if (diff < 86400000) return `${Math.floor(diff / 3600_000)}h ago`;
+  const days = Math.floor(diff / 86400000);
+  return `${days}d ago`;
 }
 
 function ActivityChart({ series }: { series: AnalyticsApiResponse["series"] }) {
@@ -198,8 +277,8 @@ export function AnalyticsClient({ email }: { email: string }) {
               Analytics
             </h1>
             <p className="mt-1 text-sm text-[#65637e]">
-              Overview of your mailbox activity. More insights coming in later
-              phases.
+              Mailbox activity, response times, productivity, and what needs your
+              attention—all scoped to the range you select.
             </p>
           </div>
           <div
@@ -245,6 +324,23 @@ export function AnalyticsClient({ email }: { email: string }) {
                 />
               ))}
             </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div
+                  key={`r-${i}`}
+                  className="h-28 rounded-2xl bg-[#e8e4f8]/55"
+                />
+              ))}
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div
+                  key={`p-${i}`}
+                  className="h-28 rounded-2xl bg-[#e8e4f8]/50"
+                />
+              ))}
+            </div>
+            <div className="h-52 rounded-2xl bg-[#e8e4f8]/45" />
             <div className="h-72 rounded-2xl bg-[#e8e4f8]/50" />
             <div className="h-48 rounded-2xl bg-[#e8e4f8]/50" />
           </div>
@@ -288,6 +384,170 @@ export function AnalyticsClient({ email }: { email: string }) {
                     value={data.summary.contactsCount}
                     hint="Unique addresses you interacted with"
                   />
+                </section>
+
+                <section className="mt-10">
+                  <h2 className="text-lg font-bold text-[#1c1b33]">
+                    Response analytics
+                  </h2>
+                  <p className="mt-0.5 text-sm text-[#65637e]">
+                    Reply time is measured from each incoming message to your next
+                    sent message in the same thread. Pending replies are inbox
+                    messages in this range that do not yet have a sent reply
+                    after them.
+                  </p>
+                  {!data.response.hasReplySamples ? (
+                    <p className="mt-4 rounded-xl border border-[#e8e4f8] bg-white px-4 py-3 text-sm text-[#65637e]">
+                      No reply data available for this period. When you reply to
+                      mail in scoped threads, averages will appear here.
+                    </p>
+                  ) : null}
+                  <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <SummaryCardText
+                      title="Average reply time"
+                      value={formatDurationMs(data.response.averageReplyTimeMs)}
+                      hint={data.response.hasReplySamples ? "Mean of all reply spans" : undefined}
+                    />
+                    <SummaryCardText
+                      title="Fastest reply"
+                      value={formatDurationMs(data.response.fastestReplyTimeMs)}
+                    />
+                    <SummaryCardText
+                      title="Slowest reply"
+                      value={formatDurationMs(data.response.slowestReplyTimeMs)}
+                    />
+                    <SummaryCard
+                      title="Pending replies"
+                      value={data.response.totalPendingReplies}
+                      hint="Inbox, no sent reply yet"
+                    />
+                  </div>
+                </section>
+
+                <section className="mt-10">
+                  <h2 className="text-lg font-bold text-[#1c1b33]">
+                    Productivity
+                  </h2>
+                  <p className="mt-0.5 text-sm text-[#65637e]">
+                    Inbox cleared % covers inbox, archive, and trash mail
+                    received in this period (spam excluded). Archived/trashed
+                    counts incoming messages currently in those folders from
+                    this period.
+                  </p>
+                  <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <SummaryCardText
+                      title="Inbox cleared"
+                      value={
+                        data.productivity.inboxClearedPercentage !== null
+                          ? `${data.productivity.inboxClearedPercentage}%`
+                          : "—"
+                      }
+                      hint={
+                        data.productivity.inboxClearedPercentage === null
+                          ? "No inbox/archive/trash mail in this range"
+                          : "Read, archived, trashed, or replied"
+                      }
+                    />
+                    <SummaryCard
+                      title="Unread emails"
+                      value={data.productivity.unreadEmailsCount}
+                      hint="Inbox, still in range"
+                    />
+                    <SummaryCard
+                      title="Replied emails"
+                      value={data.productivity.repliedEmailsCount}
+                      hint="Incoming in range with a sent reply after"
+                    />
+                    <SummaryCard
+                      title="Archived / trashed"
+                      value={data.productivity.archivedOrTrashedEmailsCount}
+                      hint="Incoming filed away from inbox"
+                    />
+                  </div>
+                </section>
+
+                <section className="mt-10 rounded-2xl border border-[#e8e4f8] bg-white p-5 shadow-sm sm:p-6">
+                  <h2 className="text-lg font-bold text-[#1c1b33]">
+                    Action insights
+                  </h2>
+                  <p className="mt-0.5 text-sm text-[#65637e]">
+                    Pending inbox threads from the selected range that still need
+                    a reply.
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    <div className="rounded-xl border border-[#e8e4f8] bg-[#faf9fe] px-4 py-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-[#9896b4]">
+                        Waiting for reply
+                      </p>
+                      <p className="mt-1 text-xl font-bold tabular-nums text-[#1c1b33]">
+                        {data.actionInsights.waitingForReplyCount.toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="rounded-xl border border-[#e8e4f8] bg-[#faf9fe] px-4 py-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-[#9896b4]">
+                        Pending over 24 hours
+                      </p>
+                      <p className="mt-1 text-xl font-bold tabular-nums text-[#1c1b33]">
+                        {data.actionInsights.pendingOver24HoursCount.toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="rounded-xl border border-[#e8e4f8] bg-[#faf9fe] px-4 py-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-[#9896b4]">
+                        Pending over 3 days
+                      </p>
+                      <p className="mt-1 text-xl font-bold tabular-nums text-[#1c1b33]">
+                        {data.actionInsights.pendingOver3DaysCount.toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+
+                  {data.actionInsights.pendingEmails.length === 0 ? (
+                    <div className="mt-6 rounded-xl border border-dashed border-[#e8e4f8] bg-[#faf9fe] px-4 py-10 text-center text-sm text-[#65637e]">
+                      No emails waiting for a reply in this range. You&apos;re all
+                      caught up here.
+                    </div>
+                  ) : (
+                    <div className="mt-6 overflow-x-auto rounded-xl border border-[#e8e4f8]">
+                      <table className="w-full min-w-[520px] text-left text-sm">
+                        <thead>
+                          <tr className="border-b border-[#e8e4f8] bg-[#faf9fe] text-[11px] font-semibold uppercase tracking-wider text-[#9896b4]">
+                            <th className="px-3 py-2.5 font-semibold">Subject</th>
+                            <th className="px-3 py-2.5 font-semibold">From</th>
+                            <th className="px-3 py-2.5 font-semibold whitespace-nowrap">
+                              Waiting
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {data.actionInsights.pendingEmails.map((row) => (
+                            <tr
+                              key={row.id}
+                              className="border-b border-[#f0edfb] last:border-0"
+                            >
+                              <td className="max-w-[220px] px-3 py-2.5 font-medium text-[#1c1b33]">
+                                <span className="line-clamp-2" title={row.subject}>
+                                  {row.subject}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2.5 text-[#65637e] break-all">
+                                {row.fromAddr || "—"}
+                              </td>
+                              <td className="whitespace-nowrap px-3 py-2.5 text-[#65637e] tabular-nums">
+                                {formatRelativeWaiting(row.createdAt)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                  <p className="mt-3 text-xs text-[#9896b4]">
+                    Open{" "}
+                    <Link href="/inbox" className="font-semibold text-[#6d4aff] hover:underline">
+                      Inbox
+                    </Link>{" "}
+                    to reply; up to 50 threads shown.
+                  </p>
                 </section>
 
                 <section className="mt-8 rounded-2xl border border-[#e8e4f8] bg-white p-5 shadow-sm sm:p-6">
