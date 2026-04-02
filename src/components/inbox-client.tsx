@@ -272,6 +272,15 @@ function IconStar() {
     </svg>
   );
 }
+function IconAnalytics() {
+  return (
+    <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+      <path d="M3 14.5v2A1.5 1.5 0 0 0 4.5 18h2a1.5 1.5 0 0 0 1.5-1.5v-7A1.5 1.5 0 0 0 6.5 8h-2A1.5 1.5 0 0 0 3 9.5v5Z" />
+      <path d="M12.5 4h-2A1.5 1.5 0 0 0 9 5.5v11A1.5 1.5 0 0 0 10.5 18h2a1.5 1.5 0 0 0 1.5-1.5v-11A1.5 1.5 0 0 0 12.5 4Z" />
+      <path d="M16.5 11h-2a1.5 1.5 0 0 0-1.5 1.5v4A1.5 1.5 0 0 0 14.5 18h2a1.5 1.5 0 0 0 1.5-1.5v-4A1.5 1.5 0 0 0 16.5 11Z" />
+    </svg>
+  );
+}
 function IconSpam() {
   return (
     <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
@@ -1573,6 +1582,7 @@ export function InboxClient({
 
           {[
             { icon: <IconStar />, label: "Plans", href: "/upgrade" },
+            { icon: <IconAnalytics />, label: "Analytics", href: "/analytics" },
             { icon: <IconInbox />, label: "Temporary Inbox", href: "/temp-inbox" },
             { icon: <IconEdit />, label: "Settings", href: "/settings" },
           ].map((item) => (
