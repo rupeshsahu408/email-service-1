@@ -37,7 +37,8 @@ const storageSchema = z.object({
 
 const securitySchema = z.object({
   minPasswordLength: z.number().int().min(8).max(128),
-  maxLoginAttempts: z.number().int().min(1).max(1000),
+  // 0 = unlimited
+  maxLoginAttempts: z.number().int().min(0).max(1000),
   sessionTimeoutMinutes: z.number().int().min(5).max(60 * 24 * 365),
 });
 

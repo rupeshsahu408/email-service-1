@@ -70,7 +70,8 @@ const DEFAULT_SETTINGS: AdminSystemSettings = {
   },
   security: {
     minPasswordLength: 12,
-    maxLoginAttempts: 10,
+    // 0 = unlimited (no lockout based on failed attempts)
+    maxLoginAttempts: 0,
     sessionTimeoutMinutes: 60 * 24 * 30,
   },
   features: {
@@ -160,7 +161,7 @@ function normalizeSettings(input: unknown): AdminSystemSettings {
         Number(raw.security?.minPasswordLength ?? DEFAULT_SETTINGS.security.minPasswordLength)
       ),
       maxLoginAttempts: Math.max(
-        1,
+        0,
         Number(raw.security?.maxLoginAttempts ?? DEFAULT_SETTINGS.security.maxLoginAttempts)
       ),
       sessionTimeoutMinutes: Math.max(

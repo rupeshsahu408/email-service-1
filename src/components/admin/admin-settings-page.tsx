@@ -154,7 +154,7 @@ export function AdminSettingsPage() {
         <h3 className="text-base font-semibold text-[#1c1b33]">Security</h3>
         <div className="mt-3 grid gap-3 md:grid-cols-3">
           <div><label className="text-xs font-semibold text-[#555370]">Minimum password length</label>{numberInput(settings.security.minPasswordLength,(n)=>setSettings({...settings,security:{...settings.security,minPasswordLength:n}}))}</div>
-          <div><label className="text-xs font-semibold text-[#555370]">Max login attempts</label>{numberInput(settings.security.maxLoginAttempts,(n)=>setSettings({...settings,security:{...settings.security,maxLoginAttempts:n}}))}</div>
+          <div><label className="text-xs font-semibold text-[#555370]">Max login attempts (0 = unlimited)</label>{numberInput(settings.security.maxLoginAttempts,(n)=>setSettings({...settings,security:{...settings.security,maxLoginAttempts:n}}))}</div>
           <div><label className="text-xs font-semibold text-[#555370]">Session timeout (minutes)</label>{numberInput(settings.security.sessionTimeoutMinutes,(n)=>setSettings({...settings,security:{...settings.security,sessionTimeoutMinutes:n}}))}</div>
         </div>
         <button onClick={()=>void saveSection("security", settings.security)} disabled={saving==="security"} className="mt-4 rounded-xl bg-[#5b3dff] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">{saving==="security"?"Saving...":"Save Security"}</button>
