@@ -6,7 +6,7 @@ import {
   BillingInterval,
   BillingProductType,
 } from "@/db/schema";
-import { logInfo } from "@/lib/logger";
+import { logError, logInfo } from "@/lib/logger";
 
 const ACTIVE_SUBSCRIPTION_STATUSES = ["active", "authenticated", "created"] as const;
 const SUCCESS_PAYMENT_STATUSES = ["captured", "success"] as const;
@@ -234,66 +234,81 @@ export async function getBillingMetricsUtc(now = new Date()) {
     ACTIVE_SUBSCRIPTION_STATUSES as unknown as string[]
   );
 
-  const [totalsRow, byProductRows, paidUsersRows, failedPaymentsRows] = await Promise.all([
-    db
-      .select({
-        totalRevenue: sql<number>`coalesce(sum(case when ${successStatusExpr} then ${billingPayments.amount} else 0 end), 0)`,
-        todayRevenue: sql<number>`coalesce(sum(case when ${successStatusExpr} and ${billingPayments.capturedAt} >= ${utcDayStart} and ${billingPayments.capturedAt} < ${nextUtcDayStart} then ${billingPayments.amount} else 0 end), 0)`,
-        monthRevenue: sql<number>`coalesce(sum(case when ${successStatusExpr} and ${billingPayments.capturedAt} >= ${utcMonthStart} and ${billingPayments.capturedAt} < ${nextUtcMonthStart} then ${billingPayments.amount} else 0 end), 0)`,
-      })
-      .from(billingPayments),
-    db
-      .select({
-        productType: billingPayments.productType,
-        revenue: sql<number>`coalesce(sum(case when ${successStatusExpr} then ${billingPayments.amount} else 0 end), 0)`,
-      })
-      .from(billingPayments)
-      .groupBy(billingPayments.productType),
-    db.execute(sql`
-      select count(distinct paid.user_id)::int as c
-      from (
-        select ${billingPayments.userId} as user_id
-        from ${billingPayments}
-        where ${successStatusExpr}
-        union
-        select ${billingSubscriptions.userId} as user_id
-        from ${billingSubscriptions}
-        where ${activeSubscriptionExpr}
-      ) paid
-    `),
-    db
-      .select({ c: sql<number>`count(*)::int` })
-      .from(billingPayments)
-      .where(eq(billingPayments.status, "failed")),
-  ]);
+  try {
+    const [totalsRow, byProductRows, paidUsersRows, failedPaymentsRows] = await Promise.all([
+      db
+        .select({
+          totalRevenue: sql<number>`coalesce(sum(case when ${successStatusExpr} then ${billingPayments.amount} else 0 end), 0)`,
+          todayRevenue: sql<number>`coalesce(sum(case when ${successStatusExpr} and ${billingPayments.capturedAt} >= ${utcDayStart} and ${billingPayments.capturedAt} < ${nextUtcDayStart} then ${billingPayments.amount} else 0 end), 0)`,
+          monthRevenue: sql<number>`coalesce(sum(case when ${successStatusExpr} and ${billingPayments.capturedAt} >= ${utcMonthStart} and ${billingPayments.capturedAt} < ${nextUtcMonthStart} then ${billingPayments.amount} else 0 end), 0)`,
+        })
+        .from(billingPayments),
+      db
+        .select({
+          productType: billingPayments.productType,
+          revenue: sql<number>`coalesce(sum(case when ${successStatusExpr} then ${billingPayments.amount} else 0 end), 0)`,
+        })
+        .from(billingPayments)
+        .groupBy(billingPayments.productType),
+      db.execute(sql`
+        select count(distinct paid.user_id)::int as c
+        from (
+          select ${billingPayments.userId} as user_id
+          from ${billingPayments}
+          where ${successStatusExpr}
+          union
+          select ${billingSubscriptions.userId} as user_id
+          from ${billingSubscriptions}
+          where ${activeSubscriptionExpr}
+        ) paid
+      `),
+      db
+        .select({ c: sql<number>`count(*)::int` })
+        .from(billingPayments)
+        .where(eq(billingPayments.status, "failed")),
+    ]);
 
-  const productMap = new Map<BillingProductType, number>();
-  for (const row of byProductRows) {
-    productMap.set(row.productType, Number(row.revenue ?? 0));
+    const productMap = new Map<BillingProductType, number>();
+    for (const row of byProductRows) {
+      productMap.set(row.productType, Number(row.revenue ?? 0));
+    }
+
+    const paidUsers =
+      Number(
+        ((paidUsersRows as unknown as { rows?: Array<{ c: number }> }).rows ?? [])[0]?.c ?? 0
+      ) || 0;
+
+    const metrics = {
+      totalRevenue: Number(totalsRow[0]?.totalRevenue ?? 0),
+      todayRevenueUtc: Number(totalsRow[0]?.todayRevenue ?? 0),
+      thisMonthRevenueUtc: Number(totalsRow[0]?.monthRevenue ?? 0),
+      businessEmailRevenue: Number(productMap.get("business_email") ?? 0),
+      temporaryInboxRevenue: Number(productMap.get("temporary_inbox") ?? 0),
+      totalPaidUsers: paidUsers,
+      failedPayments: Number(failedPaymentsRows[0]?.c ?? 0),
+    };
+    logInfo("billing_metrics_computed", {
+      totalRevenue: metrics.totalRevenue,
+      todayRevenueUtc: metrics.todayRevenueUtc,
+      thisMonthRevenueUtc: metrics.thisMonthRevenueUtc,
+      failedPayments: metrics.failedPayments,
+      totalPaidUsers: metrics.totalPaidUsers,
+    });
+    return metrics;
+  } catch (error) {
+    logError("billing_metrics_query_failed", {
+      message: error instanceof Error ? error.message : "unknown",
+    });
+    return {
+      totalRevenue: 0,
+      todayRevenueUtc: 0,
+      thisMonthRevenueUtc: 0,
+      businessEmailRevenue: 0,
+      temporaryInboxRevenue: 0,
+      totalPaidUsers: 0,
+      failedPayments: 0,
+    };
   }
-
-  const paidUsers =
-    Number(
-      ((paidUsersRows as unknown as { rows?: Array<{ c: number }> }).rows ?? [])[0]?.c ?? 0
-    ) || 0;
-
-  const metrics = {
-    totalRevenue: Number(totalsRow[0]?.totalRevenue ?? 0),
-    todayRevenueUtc: Number(totalsRow[0]?.todayRevenue ?? 0),
-    thisMonthRevenueUtc: Number(totalsRow[0]?.monthRevenue ?? 0),
-    businessEmailRevenue: Number(productMap.get("business_email") ?? 0),
-    temporaryInboxRevenue: Number(productMap.get("temporary_inbox") ?? 0),
-    totalPaidUsers: paidUsers,
-    failedPayments: Number(failedPaymentsRows[0]?.c ?? 0),
-  };
-  logInfo("billing_metrics_computed", {
-    totalRevenue: metrics.totalRevenue,
-    todayRevenueUtc: metrics.todayRevenueUtc,
-    thisMonthRevenueUtc: metrics.thisMonthRevenueUtc,
-    failedPayments: metrics.failedPayments,
-    totalPaidUsers: metrics.totalPaidUsers,
-  });
-  return metrics;
 }
 
 export async function findSubscriptionByProviderId(providerSubscriptionId: string) {
