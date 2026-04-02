@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { and, count, eq, gte } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { getDb } from "@/db";
-import { authLoginEvents, users } from "@/db/schema";
+import { users } from "@/db/schema";
 import { logError, logInfo } from "@/lib/logger";
 import { verifySecret } from "@/lib/password";
 import { getClientIp } from "@/lib/rate-limit";
@@ -83,31 +83,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const failedRows = await getDb()
-      .select({ c: count() })
-      .from(authLoginEvents)
-      .where(
-        and(
-          eq(authLoginEvents.userId, user.id),
-          eq(authLoginEvents.outcome, "failed"),
-          gte(authLoginEvents.createdAt, since)
-        )
-      );
-    const failedCount = Number(failedRows[0]?.c ?? 0);
-    const attemptLimit = Number(settings.security.maxLoginAttempts ?? 0);
-    // Admins always bypass this lockout (wrong password still fails below).
-    // 0 = unlimited (no lockout).
-    if (
-      !user.isAdmin &&
-      attemptLimit > 0 &&
-      failedCount >= attemptLimit
-    ) {
-      return NextResponse.json(
-        { error: "Too many failed attempts. Try again later or reset your password." },
-        { status: 429 }
-      );
-    }
+    // No lockout based on prior failed password attempts (unlimited tries for all users).
+
     const lock = await fetchSecurityLockIfExists(user.id);
     const userWithLock = { ...user, securityLockedUntil: lock.securityLockedUntil };
 
