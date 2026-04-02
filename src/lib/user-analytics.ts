@@ -1,7 +1,13 @@
 import { and, asc, count, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import { messages, type MessageFolder } from "@/db/schema";
+import { fetchHourlyActivityUtcBuckets } from "@/lib/analytics-hourly-utc";
 import { computePhase3Analytics, type Phase3Payload } from "@/lib/analytics-phase3";
+import {
+  computePhase4Insights,
+  type Phase4Payload,
+} from "@/lib/analytics-phase4-insights";
+import { computeAverageReplyTimeMsForWindow } from "@/lib/analytics-reply-window";
 import { formatUserEmail } from "@/lib/constants";
 import { parsePrimaryEmail } from "@/lib/mail-filter";
 
@@ -55,8 +61,15 @@ function enumerateUtcDaysInclusive(start: Date, end: Date): string[] {
   return keys;
 }
 
+export type ReplyInsightSample = {
+  delayMs: number;
+  incomingHourUtc: number;
+  replyHourUtc: number;
+};
+
 function emptyPhase2(nowIso: string) {
   return {
+    replyInsightSamples: [] as ReplyInsightSample[],
     response: {
       averageReplyTimeMs: null as number | null,
       fastestReplyTimeMs: null as number | null,
@@ -73,7 +86,9 @@ function emptyPhase2(nowIso: string) {
     actionInsights: {
       waitingForReplyCount: 0,
       pendingOver24HoursCount: 0,
+      pendingOver48HoursCount: 0,
       pendingOver3DaysCount: 0,
+      delayedInboxRepliesOver48h: 0,
       pendingEmails: [] as Array<{
         id: string;
         threadId: string;
@@ -118,6 +133,11 @@ function analyzePhase2ThreadData(
   };
 
   const replyTimesMs: number[] = [];
+  const replyInsightSamples: ReplyInsightSample[] = [];
+  const MAX_REPLY_SAMPLES = 300;
+  let delayedInboxRepliesOver48h = 0;
+  const MS_HOUR = 3600000;
+  const MS_48H = 48 * MS_HOUR;
   let repliedEmailsCount = 0;
   let unreadEmailsCount = 0;
   let archivedOrTrashedEmailsCount = 0;
@@ -138,8 +158,19 @@ function analyzePhase2ThreadData(
 
       if (inAnalyticsRange(cr)) {
         if (reply) {
-          replyTimesMs.push(reply.createdAt.getTime() - cr.getTime());
+          const delayMs = reply.createdAt.getTime() - cr.getTime();
+          replyTimesMs.push(delayMs);
           repliedEmailsCount += 1;
+          if (m.folder === "inbox" && delayMs > MS_48H) {
+            delayedInboxRepliesOver48h += 1;
+          }
+          if (replyInsightSamples.length < MAX_REPLY_SAMPLES) {
+            replyInsightSamples.push({
+              delayMs,
+              incomingHourUtc: m.createdAt.getUTCHours(),
+              replyHourUtc: reply.createdAt.getUTCHours(),
+            });
+          }
         }
 
         if (m.folder === "inbox" && m.readAt === null) {
@@ -184,6 +215,9 @@ function analyzePhase2ThreadData(
   const pendingOver24HoursCount = pendingInbox.filter(
     (m) => now.getTime() - m.createdAt.getTime() > MS_DAY
   ).length;
+  const pendingOver48HoursCount = pendingInbox.filter(
+    (m) => now.getTime() - m.createdAt.getTime() > 2 * MS_DAY
+  ).length;
   const pendingOver3DaysCount = pendingInbox.filter(
     (m) => now.getTime() - m.createdAt.getTime() > 3 * MS_DAY
   ).length;
@@ -203,6 +237,7 @@ function analyzePhase2ThreadData(
       : null;
 
   return {
+    replyInsightSamples,
     response: {
       averageReplyTimeMs: avg,
       fastestReplyTimeMs: fastest,
@@ -219,7 +254,9 @@ function analyzePhase2ThreadData(
     actionInsights: {
       waitingForReplyCount: pendingInbox.length,
       pendingOver24HoursCount,
+      pendingOver48HoursCount,
       pendingOver3DaysCount,
+      delayedInboxRepliesOver48h,
       pendingEmails,
     },
     phase2ComputedAt: now.toISOString(),
@@ -296,7 +333,9 @@ export type UserAnalyticsPayload = {
   actionInsights: {
     waitingForReplyCount: number;
     pendingOver24HoursCount: number;
+    pendingOver48HoursCount: number;
     pendingOver3DaysCount: number;
+    delayedInboxRepliesOver48h: number;
     pendingEmails: Array<{
       id: string;
       threadId: string;
@@ -307,6 +346,7 @@ export type UserAnalyticsPayload = {
   };
   phase2ComputedAt: string;
   phase3: Phase3Payload;
+  phase4: Phase4Payload;
 };
 
 export async function getUserAnalytics(
@@ -316,6 +356,8 @@ export async function getUserAnalytics(
 ): Promise<UserAnalyticsPayload> {
   const now = new Date();
   const { start, end } = getUserAnalyticsTimeRange(range, now);
+  const windowMs = end.getTime() - start.getTime();
+  const prevStart = new Date(start.getTime() - windowMs);
   const selfEmail = formatUserEmail(userLocalPart).toLowerCase();
   const db = getDb();
 
@@ -337,6 +379,8 @@ export async function getUserAnalytics(
     outgoingByTo,
     phase2,
     phase3,
+    hourlyActivityUtc,
+    prevReplyWindow,
   ] = await Promise.all([
     db
       .select({ n: count() })
@@ -386,6 +430,10 @@ export async function getUserAnalytics(
       .groupBy(messages.toAddr),
     computePhase2Block(userId, start, end, now),
     computePhase3Analytics(userId, selfEmail, start, end),
+    fetchHourlyActivityUtcBuckets(userId, start, end),
+    range !== "today"
+      ? computeAverageReplyTimeMsForWindow(userId, prevStart, start)
+      : Promise.resolve({ averageReplyMs: null as number | null, sampleCount: 0 }),
   ]);
 
   const recvMap = new Map<string, number>();
@@ -437,6 +485,37 @@ export async function getUserAnalytics(
     }
   }
 
+  const domainTotals = new Map<string, number>();
+  for (const row of incomingByFrom) {
+    const e = parsePrimaryEmail(row.fromAddr);
+    if (!e || !e.includes("@") || e === selfEmail) continue;
+    const dom = e.slice(e.indexOf("@") + 1).toLowerCase();
+    if (!dom) continue;
+    domainTotals.set(dom, (domainTotals.get(dom) ?? 0) + Number(row.n));
+  }
+  const incomingByDomain = [...domainTotals.entries()]
+    .map(([domain, count]) => ({ domain, count }))
+    .sort((a, b) => b.count - a.count);
+
+  const phase4 = computePhase4Insights({
+    range,
+    emailsReceived: Number(receivedRow[0]?.n ?? 0),
+    averageReplyTimeMs: phase2.response.averageReplyTimeMs,
+    hasReplySamples: phase2.response.hasReplySamples,
+    actionInsights: {
+      waitingForReplyCount: phase2.actionInsights.waitingForReplyCount,
+      pendingOver24HoursCount: phase2.actionInsights.pendingOver24HoursCount,
+      pendingOver48HoursCount: phase2.actionInsights.pendingOver48HoursCount,
+      pendingOver3DaysCount: phase2.actionInsights.pendingOver3DaysCount,
+      delayedInboxRepliesOver48h: phase2.actionInsights.delayedInboxRepliesOver48h,
+    },
+    phase3,
+    replyInsightSamples: phase2.replyInsightSamples,
+    hourlyActivityUtc,
+    incomingByDomain,
+    previousAverageReplyMs: prevReplyWindow.averageReplyMs,
+  });
+
   return {
     range,
     start: start.toISOString(),
@@ -455,5 +534,6 @@ export async function getUserAnalytics(
     actionInsights: phase2.actionInsights,
     phase2ComputedAt: phase2.phase2ComputedAt,
     phase3,
+    phase4,
   };
 }

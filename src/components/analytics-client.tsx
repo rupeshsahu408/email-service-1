@@ -35,7 +35,9 @@ type AnalyticsApiResponse = {
   actionInsights: {
     waitingForReplyCount: number;
     pendingOver24HoursCount: number;
+    pendingOver48HoursCount: number;
     pendingOver3DaysCount: number;
+    delayedInboxRepliesOver48h: number;
     pendingEmails: Array<{
       id: string;
       threadId: string;
@@ -70,6 +72,10 @@ type AnalyticsApiResponse = {
       insightLine: string;
     };
     phase3ComputedAt: string;
+  };
+  phase4: {
+    insights: Array<{ icon: string; text: string }>;
+    phase4ComputedAt: string;
   };
 };
 
@@ -443,6 +449,7 @@ export function AnalyticsClient({ email }: { email: string }) {
               ))}
             </div>
             <div className="h-52 rounded-2xl bg-[#e8e4f8]/45" />
+            <div className="h-40 rounded-2xl bg-[#e8e4f8]/43" />
             <div className="h-64 rounded-2xl bg-[#e8e4f8]/42" />
             <div className="h-72 rounded-2xl bg-[#e8e4f8]/40" />
             <div className="h-72 rounded-2xl bg-[#e8e4f8]/50" />
@@ -488,6 +495,40 @@ export function AnalyticsClient({ email }: { email: string }) {
                     value={data.summary.contactsCount}
                     hint="Unique addresses you interacted with"
                   />
+                </section>
+
+                <section className="mt-10 rounded-2xl border border-[#e8e4f8] bg-gradient-to-br from-[#f8f6ff] via-white to-[#f0faf8] p-5 shadow-sm sm:p-6">
+                  <h2 className="text-lg font-bold text-[#1c1b33]">
+                    Smart insights
+                  </h2>
+                  <p className="mt-0.5 text-sm text-[#65637e]">
+                    Rule-based highlights from your real mailbox patterns (UTC
+                    clocks for timing). Not AI-generated.
+                  </p>
+                  {data.phase4.insights.length === 0 ? (
+                    <p className="mt-4 text-sm text-[#9896b4]">
+                      No insights for this range yet.
+                    </p>
+                  ) : (
+                    <ul className="mt-4 space-y-3">
+                      {data.phase4.insights.map((insight, idx) => (
+                        <li
+                          key={`${idx}-${insight.text.slice(0, 24)}`}
+                          className="flex gap-3 rounded-xl border border-white/80 bg-white/90 px-4 py-3 shadow-sm"
+                        >
+                          <span
+                            className="text-xl leading-none"
+                            aria-hidden
+                          >
+                            {insight.icon}
+                          </span>
+                          <p className="min-w-0 flex-1 text-sm leading-relaxed text-[#1c1b33]">
+                            {insight.text}
+                          </p>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </section>
 
                 <section className="mt-10">
