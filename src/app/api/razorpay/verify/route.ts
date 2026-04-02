@@ -4,18 +4,25 @@ import { getDb } from "@/db";
 import { users } from "@/db/schema";
 import { getCurrentUser } from "@/lib/session";
 import {
+  fetchRazorpayPayment,
+  fetchRazorpaySubscription,
+  isProfessionalSubscriptionEntity,
+  isTempInboxSubscriptionEntity,
   verifyRazorpayPayment,
   verifyRazorpaySubscriptionPayment,
   RAZORPAY_PLAN_DAYS,
-  fetchRazorpaySubscription,
-  isTempInboxSubscriptionEntity,
-  isProfessionalSubscriptionEntity,
 } from "@/lib/razorpay";
 import {
   syncUserTempInboxSubscriptionFromRazorpay,
   syncUserProfessionalSubscriptionFromRazorpay,
   syncUserSubscriptionFromRazorpay,
 } from "@/lib/razorpay-subscription-sync";
+import {
+  getIntervalFromSubscription,
+  getProductTypeFromSubscription,
+  upsertBillingPayment,
+  upsertBillingSubscription,
+} from "@/lib/billing";
 import { logError, logInfo } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
@@ -69,8 +76,24 @@ export async function POST(request: NextRequest) {
   const planExpiresAt = new Date(Date.now() + RAZORPAY_PLAN_DAYS * 24 * 60 * 60 * 1000);
 
   try {
+    const payment = await fetchRazorpayPayment(razorpay_payment_id);
     if (isSubscription && razorpay_subscription_id) {
       const sub = await fetchRazorpaySubscription(razorpay_subscription_id);
+      const productType = getProductTypeFromSubscription(sub);
+      const interval = getIntervalFromSubscription(sub);
+      await upsertBillingSubscription({
+        userId: user.id,
+        productType,
+        interval,
+        providerSubscriptionId: razorpay_subscription_id,
+        providerPlanId: sub?.plan_id ?? null,
+        status: sub?.status ?? "active",
+        autoRenew: sub?.status !== "cancelled",
+        currentStartAt: sub?.current_start ? new Date(sub.current_start * 1000) : null,
+        currentEndAt: sub?.current_end ? new Date(sub.current_end * 1000) : null,
+        nextBillingAt: sub?.charge_at ? new Date(sub.charge_at * 1000) : null,
+        metadata: { source: "razorpay_verify" },
+      });
       if (isTempInboxSubscriptionEntity(sub)) {
         await syncUserTempInboxSubscriptionFromRazorpay(
           user.id,
@@ -84,11 +107,37 @@ export async function POST(request: NextRequest) {
       } else {
         await syncUserSubscriptionFromRazorpay(user.id, razorpay_subscription_id);
       }
+      await upsertBillingPayment({
+        userId: user.id,
+        productType,
+        interval,
+        providerPaymentId: razorpay_payment_id,
+        providerOrderId: payment?.order_id ?? null,
+        providerSubscriptionId: razorpay_subscription_id,
+        providerPlanId: sub?.plan_id ?? null,
+        amount: Number(payment?.amount ?? 0),
+        currency: payment?.currency ?? "INR",
+        status: "captured",
+        capturedAt: new Date(),
+        metadata: { source: "razorpay_verify", razorpayStatus: payment?.status ?? null },
+      });
       await getDb()
         .update(users)
         .set({ razorpayOrderId: null })
         .where(eq(users.id, user.id));
     } else {
+      await upsertBillingPayment({
+        userId: user.id,
+        productType: "business_email",
+        interval: "one_time",
+        providerPaymentId: razorpay_payment_id,
+        providerOrderId: razorpay_order_id ?? null,
+        amount: Number(payment?.amount ?? 0),
+        currency: payment?.currency ?? "INR",
+        status: "captured",
+        capturedAt: new Date(),
+        metadata: { source: "razorpay_verify", razorpayStatus: payment?.status ?? null },
+      });
       await getDb()
         .update(users)
         .set({

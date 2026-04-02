@@ -6,10 +6,12 @@ import {
   verifyRazorpayWebhook,
   RAZORPAY_PLAN_DAYS,
   fetchRazorpaySubscription,
+  RazorpayPaymentEntity,
   isTempInboxSubscriptionEntity,
   isProfessionalSubscriptionEntity,
   nextBillingAtFromSubscription,
   planExpiresAtFromSubscription,
+  subscriptionAutoRenewFromEntity,
 } from "@/lib/razorpay";
 import {
   downgradeTempInboxAfterSubscriptionEnd,
@@ -19,11 +21,28 @@ import {
   syncUserProfessionalSubscriptionFromRazorpay,
   syncUserSubscriptionFromRazorpay,
 } from "@/lib/razorpay-subscription-sync";
+import {
+  getIntervalFromSubscription,
+  getProductTypeFromSubscription,
+  upsertBillingPayment,
+  upsertBillingSubscription,
+} from "@/lib/billing";
 import { logError, logInfo, logWarn } from "@/lib/logger";
 
 export const runtime = "nodejs";
 
 type RazorpayEntity = Record<string, unknown>;
+type RazorpaySubscriptionPayloadEntity = {
+  id?: string;
+  plan_id?: string;
+  status?: string;
+  current_start?: number;
+  current_end?: number;
+  charge_at?: number;
+  cancel_at_cycle_end?: boolean;
+  cancelled_at?: number;
+  notes?: Record<string, string>;
+};
 
 function extractSubscriptionNotes(payload: Record<string, unknown>): {
   userId?: string;
@@ -48,6 +67,84 @@ function extractPaymentNotes(payload: Record<string, unknown>): {
       ? payment.subscription_id
       : undefined;
   return { userId: notes.userId, subscriptionId };
+}
+
+function extractPaymentEntity(payload: Record<string, unknown>): RazorpayPaymentEntity | null {
+  const payment = (payload?.payment as { entity?: RazorpayPaymentEntity })?.entity;
+  return payment ?? null;
+}
+
+async function recordSubscriptionForUser(
+  userId: string,
+  subscriptionId: string,
+  fallbackSub?: RazorpaySubscriptionPayloadEntity | null
+) {
+  const sub =
+    (await fetchRazorpaySubscription(subscriptionId)) ??
+    ({
+      id: fallbackSub?.id ?? subscriptionId,
+      plan_id: fallbackSub?.plan_id,
+      status: fallbackSub?.status,
+      current_start: fallbackSub?.current_start,
+      current_end: fallbackSub?.current_end,
+      charge_at: fallbackSub?.charge_at,
+      cancel_at_cycle_end: fallbackSub?.cancel_at_cycle_end,
+      cancelled_at: fallbackSub?.cancelled_at,
+      notes: fallbackSub?.notes,
+    } as const);
+  const productType = getProductTypeFromSubscription(sub);
+  const interval = getIntervalFromSubscription(sub);
+  await upsertBillingSubscription({
+    userId,
+    productType,
+    interval,
+    providerSubscriptionId: subscriptionId,
+    providerPlanId: sub?.plan_id ?? null,
+    status: sub?.status ?? "active",
+    autoRenew: subscriptionAutoRenewFromEntity(sub),
+    currentStartAt: sub?.current_start ? new Date(sub.current_start * 1000) : null,
+    currentEndAt: sub?.current_end ? new Date(sub.current_end * 1000) : null,
+    nextBillingAt: nextBillingAtFromSubscription(sub) ?? null,
+    cancelledAt: sub?.cancelled_at ? new Date(sub.cancelled_at * 1000) : null,
+    metadata: { source: "razorpay_webhook" },
+  });
+  return sub;
+}
+
+async function recordPaymentForUser(
+  userId: string,
+  payment: RazorpayPaymentEntity,
+  statusOverride?: string
+) {
+  const sub = payment.subscription_id
+    ? await fetchRazorpaySubscription(payment.subscription_id)
+    : null;
+  const productType = getProductTypeFromSubscription(sub);
+  const interval = getIntervalFromSubscription(sub);
+  const status = statusOverride ?? payment.status ?? (payment.captured ? "captured" : "failed");
+  const failedReason =
+    payment.error_reason || payment.error_description || (status === "failed" ? "payment_failed" : null);
+  await upsertBillingPayment({
+    userId,
+    productType,
+    interval,
+    providerPaymentId: payment.id,
+    providerOrderId: payment.order_id ?? null,
+    providerSubscriptionId: payment.subscription_id ?? null,
+    providerPlanId: sub?.plan_id ?? null,
+    amount: Number(payment.amount ?? 0),
+    currency: payment.currency ?? "INR",
+    status,
+    capturedAt: status === "captured" ? new Date() : null,
+    failedReason,
+    metadata: { source: "razorpay_webhook", razorpayStatus: payment.status ?? null },
+  });
+  logInfo("billing_payment_recorded_webhook", {
+    userId,
+    paymentId: payment.id,
+    status,
+    productType,
+  });
 }
 
 export async function POST(request: NextRequest) {
@@ -86,7 +183,9 @@ export async function POST(request: NextRequest) {
         break;
       }
       try {
-        const sub = await fetchRazorpaySubscription(subscriptionId);
+        const subEntity = (payload?.subscription as { entity?: RazorpaySubscriptionPayloadEntity })
+          ?.entity;
+        const sub = await recordSubscriptionForUser(userId, subscriptionId, subEntity);
         if (isTempInboxSubscriptionEntity(sub)) {
           await syncUserTempInboxSubscriptionFromRazorpay(userId, subscriptionId);
         } else if (isProfessionalSubscriptionEntity(sub)) {
@@ -110,13 +209,17 @@ export async function POST(request: NextRequest) {
 
     case "subscription.charged": {
       const { userId, subscriptionId } = extractPaymentNotes(payload);
+      const payment = extractPaymentEntity(payload);
       if (!userId) {
         logWarn("razorpay_webhook_no_user_id", { event: event.event });
         break;
       }
       try {
+        if (payment?.id) {
+          await recordPaymentForUser(userId, payment, "captured");
+        }
         if (subscriptionId) {
-          const sub = await fetchRazorpaySubscription(subscriptionId);
+          const sub = await recordSubscriptionForUser(userId, subscriptionId);
           if (isTempInboxSubscriptionEntity(sub)) {
             await syncUserTempInboxSubscriptionFromRazorpay(
               userId,
@@ -156,11 +259,15 @@ export async function POST(request: NextRequest) {
 
     case "payment.failed": {
       const { userId, subscriptionId } = extractPaymentNotes(payload);
+      const payment = extractPaymentEntity(payload);
       if (!userId) {
         logWarn("razorpay_webhook_no_user_id", { event: event.event });
         break;
       }
       try {
+        if (payment?.id) {
+          await recordPaymentForUser(userId, payment, "failed");
+        }
         const sub = subscriptionId
           ? await fetchRazorpaySubscription(subscriptionId)
           : null;
@@ -200,8 +307,10 @@ export async function POST(request: NextRequest) {
         break;
       }
       try {
+        const subEntity = (payload?.subscription as { entity?: RazorpaySubscriptionPayloadEntity })
+          ?.entity;
         const sub = subscriptionId
-          ? await fetchRazorpaySubscription(subscriptionId)
+          ? await recordSubscriptionForUser(userId, subscriptionId, subEntity)
           : null;
         const isTemp = isTempInboxSubscriptionEntity(sub);
         const isPro = isProfessionalSubscriptionEntity(sub);
@@ -275,10 +384,14 @@ export async function POST(request: NextRequest) {
 
     case "payment.captured": {
       const { userId, subscriptionId } = extractPaymentNotes(payload);
+      const payment = extractPaymentEntity(payload);
       if (!userId) break;
       try {
+        if (payment?.id) {
+          await recordPaymentForUser(userId, payment, "captured");
+        }
         if (subscriptionId) {
-          const sub = await fetchRazorpaySubscription(subscriptionId);
+          const sub = await recordSubscriptionForUser(userId, subscriptionId);
           if (isTempInboxSubscriptionEntity(sub)) {
             await syncUserTempInboxSubscriptionFromRazorpay(
               userId,

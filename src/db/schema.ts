@@ -102,6 +102,83 @@ export const users = pgTable(
   (t) => [uniqueIndex("users_local_part_unique").on(t.localPart)]
 );
 
+export const billingProductTypeEnum = [
+  "business_email",
+  "temporary_inbox",
+  "professional_email",
+] as const;
+export type BillingProductType = (typeof billingProductTypeEnum)[number];
+
+export const billingIntervalEnum = ["monthly", "yearly", "weekly", "one_time"] as const;
+export type BillingInterval = (typeof billingIntervalEnum)[number];
+
+export const billingSubscriptions = pgTable(
+  "billing_subscriptions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    productType: varchar("product_type", { length: 32 })
+      .notNull()
+      .$type<BillingProductType>(),
+    interval: varchar("interval", { length: 16 }).notNull().$type<BillingInterval>(),
+    provider: varchar("provider", { length: 32 }).notNull().default("razorpay"),
+    providerSubscriptionId: varchar("provider_subscription_id", { length: 128 }).notNull(),
+    providerPlanId: varchar("provider_plan_id", { length: 128 }),
+    status: varchar("status", { length: 32 }).notNull().default("created"),
+    autoRenew: boolean("auto_renew").notNull().default(true),
+    currentStartAt: timestamp("current_start_at", { withTimezone: true }),
+    currentEndAt: timestamp("current_end_at", { withTimezone: true }),
+    nextBillingAt: timestamp("next_billing_at", { withTimezone: true }),
+    cancelAtCycleEnd: boolean("cancel_at_cycle_end").notNull().default(false),
+    cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+    metadata: jsonb("metadata").$type<Record<string, unknown>>(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    uniqueIndex("billing_subscriptions_provider_sub_unique").on(t.providerSubscriptionId),
+    index("billing_subscriptions_user_idx").on(t.userId, t.createdAt),
+    index("billing_subscriptions_status_idx").on(t.status, t.nextBillingAt),
+    index("billing_subscriptions_product_idx").on(t.productType, t.interval),
+  ]
+);
+
+export const billingPayments = pgTable(
+  "billing_payments",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    productType: varchar("product_type", { length: 32 })
+      .notNull()
+      .$type<BillingProductType>(),
+    interval: varchar("interval", { length: 16 }).notNull().$type<BillingInterval>(),
+    provider: varchar("provider", { length: 32 }).notNull().default("razorpay"),
+    providerPaymentId: varchar("provider_payment_id", { length: 128 }).notNull(),
+    providerOrderId: varchar("provider_order_id", { length: 128 }),
+    providerSubscriptionId: varchar("provider_subscription_id", { length: 128 }),
+    providerPlanId: varchar("provider_plan_id", { length: 128 }),
+    amount: integer("amount").notNull().default(0),
+    currency: varchar("currency", { length: 16 }).notNull().default("INR"),
+    status: varchar("status", { length: 32 }).notNull(),
+    capturedAt: timestamp("captured_at", { withTimezone: true }),
+    failedReason: text("failed_reason"),
+    metadata: jsonb("metadata").$type<Record<string, unknown>>(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    uniqueIndex("billing_payments_provider_payment_unique").on(t.providerPaymentId),
+    index("billing_payments_user_idx").on(t.userId, t.createdAt),
+    index("billing_payments_status_idx").on(t.status, t.capturedAt),
+    index("billing_payments_product_idx").on(t.productType, t.interval),
+    index("billing_payments_subscription_idx").on(t.providerSubscriptionId),
+  ]
+);
+
 export const adminActivityLogs = pgTable(
   "admin_activity_logs",
   {

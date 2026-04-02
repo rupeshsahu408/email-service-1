@@ -19,6 +19,13 @@ type DashboardData = {
     recentErrors24h?: number;
     emailDeliveryFailuresToday?: number;
     inboundEmailFailuresToday?: number;
+    totalRevenue?: number;
+    todayRevenueUtc?: number;
+    thisMonthRevenueUtc?: number;
+    businessEmailRevenue?: number;
+    temporaryInboxRevenue?: number;
+    totalPaidUsers?: number;
+    failedPayments?: number;
   };
   charts: {
     emailVolumeLast7Days: Array<{ label: string; sent: number; received: number }>;
@@ -134,6 +141,39 @@ export function AdminDashboard() {
     ? [
         { label: "Total Users", value: data.summary.totalUsers.toLocaleString() },
         { label: "Active Users", value: data.summary.activeUsers.toLocaleString(), tone: "good" },
+        {
+          label: "Total Revenue",
+          value: `INR ${((data.summary.totalRevenue ?? 0) / 100).toLocaleString()}`,
+          tone: "good",
+        },
+        {
+          label: "Today Revenue (UTC)",
+          value: `INR ${((data.summary.todayRevenueUtc ?? 0) / 100).toLocaleString()}`,
+          tone: "good",
+        },
+        {
+          label: "This Month Revenue (UTC)",
+          value: `INR ${((data.summary.thisMonthRevenueUtc ?? 0) / 100).toLocaleString()}`,
+          tone: "good",
+        },
+        {
+          label: "Business Email Revenue",
+          value: `INR ${((data.summary.businessEmailRevenue ?? 0) / 100).toLocaleString()}`,
+        },
+        {
+          label: "Temporary Inbox Revenue",
+          value: `INR ${((data.summary.temporaryInboxRevenue ?? 0) / 100).toLocaleString()}`,
+        },
+        {
+          label: "Total Paid Users",
+          value: (data.summary.totalPaidUsers ?? 0).toLocaleString(),
+          tone: "good",
+        },
+        {
+          label: "Failed Payments",
+          value: (data.summary.failedPayments ?? 0).toLocaleString(),
+          tone: (data.summary.failedPayments ?? 0) > 0 ? "warn" : "good",
+        },
         {
           label: "Mailboxes (domains)",
           value: `${(data.summary.mailboxCount ?? 0).toLocaleString()} / ${(data.summary.domainCount ?? 0).toLocaleString()}`,

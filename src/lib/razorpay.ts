@@ -173,6 +173,22 @@ export type RazorpaySubscriptionEntity = {
   end_at?: number;
   paid_count?: number;
   notes?: Record<string, string>;
+  cancel_at_cycle_end?: boolean;
+  cancelled_at?: number;
+};
+
+export type RazorpayPaymentEntity = {
+  id: string;
+  order_id?: string;
+  subscription_id?: string;
+  amount?: number;
+  currency?: string;
+  status?: string;
+  captured?: boolean;
+  created_at?: number;
+  notes?: Record<string, string>;
+  error_reason?: string;
+  error_description?: string;
 };
 
 /** Detect Professional subscriptions by Razorpay plan id or subscription notes from our API. */
@@ -207,6 +223,22 @@ export async function fetchRazorpaySubscription(
     );
     if (!res.ok) return null;
     return (await res.json()) as RazorpaySubscriptionEntity;
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchRazorpayPayment(
+  paymentId: string
+): Promise<RazorpayPaymentEntity | null> {
+  try {
+    const res = await fetch(`https://api.razorpay.com/v1/payments/${paymentId}`, {
+      headers: {
+        Authorization: authHeader(),
+      },
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as RazorpayPaymentEntity;
   } catch {
     return null;
   }

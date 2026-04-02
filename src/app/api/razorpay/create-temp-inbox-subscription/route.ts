@@ -3,11 +3,11 @@ import { getCurrentUser } from "@/lib/session";
 import {
   createRazorpaySubscription,
   isRazorpayConfigured,
-  RAZORPAY_TEMP_INBOX_PLAN_ID,
 } from "@/lib/razorpay";
+import { getRazorpayPlanMapping, upsertBillingSubscription } from "@/lib/billing";
 import { logError } from "@/lib/logger";
 
-export async function POST() {
+export async function POST(request: Request) {
   const user = await getCurrentUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -20,23 +20,38 @@ export async function POST() {
     );
   }
 
-  if (!RAZORPAY_TEMP_INBOX_PLAN_ID) {
-    return NextResponse.json(
-      { error: "Temporary Inbox plan is not configured on this server." },
-      { status: 503 }
-    );
-  }
-
   try {
+    const body = (await request.json().catch(() => ({}))) as { interval?: "monthly" | "yearly" };
+    const mapping = getRazorpayPlanMapping({
+      productType: "temporary_inbox",
+      interval: body.interval,
+    });
+    if (!mapping.planId) {
+      return NextResponse.json(
+        { error: "Temporary Inbox plan is not configured on this server." },
+        { status: 503 }
+      );
+    }
     const subscription = await createRazorpaySubscription({
-      planId: RAZORPAY_TEMP_INBOX_PLAN_ID,
-      // Number of billing cycles; used by Razorpay.
-      totalCount: 52,
+      planId: mapping.planId,
+      totalCount: mapping.totalCount,
       notes: {
         userId: user.id,
         localPart: user.localPart,
         kind: "temp_inbox",
+        productType: mapping.productType,
+        interval: mapping.interval,
       },
+    });
+    await upsertBillingSubscription({
+      userId: user.id,
+      productType: mapping.productType,
+      interval: mapping.interval,
+      providerSubscriptionId: subscription.id,
+      providerPlanId: mapping.planId,
+      status: "created",
+      autoRenew: true,
+      metadata: { source: "create-temp-inbox-subscription" },
     });
     return NextResponse.json({ subscriptionId: subscription.id });
   } catch (e) {

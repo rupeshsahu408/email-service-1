@@ -3,11 +3,11 @@ import { getCurrentUser } from "@/lib/session";
 import {
   createRazorpaySubscription,
   isRazorpayConfigured,
-  RAZORPAY_BUSINESS_PLAN_ID,
 } from "@/lib/razorpay";
+import { getRazorpayPlanMapping, upsertBillingSubscription } from "@/lib/billing";
 import { logError } from "@/lib/logger";
 
-export async function POST() {
+export async function POST(request: Request) {
   const user = await getCurrentUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -21,10 +21,37 @@ export async function POST() {
   }
 
   try {
+    const body = (await request.json().catch(() => ({}))) as { interval?: "monthly" | "yearly" };
+    const mapping = getRazorpayPlanMapping({
+      productType: "business_email",
+      interval: body.interval,
+    });
+    if (!mapping.planId) {
+      return NextResponse.json(
+        { error: "Business plan is not configured on this server." },
+        { status: 503 }
+      );
+    }
     const subscription = await createRazorpaySubscription({
-      planId: RAZORPAY_BUSINESS_PLAN_ID,
-      totalCount: 120,
-      notes: { userId: user.id, localPart: user.localPart, kind: "business" },
+      planId: mapping.planId,
+      totalCount: mapping.totalCount,
+      notes: {
+        userId: user.id,
+        localPart: user.localPart,
+        kind: "business",
+        productType: mapping.productType,
+        interval: mapping.interval,
+      },
+    });
+    await upsertBillingSubscription({
+      userId: user.id,
+      productType: mapping.productType,
+      interval: mapping.interval,
+      providerSubscriptionId: subscription.id,
+      providerPlanId: mapping.planId,
+      status: "created",
+      autoRenew: true,
+      metadata: { source: "create-subscription" },
     });
     return NextResponse.json({ subscriptionId: subscription.id });
   } catch (e) {

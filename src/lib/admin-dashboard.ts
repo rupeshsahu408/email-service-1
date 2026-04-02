@@ -11,6 +11,7 @@ import {
   users,
 } from "@/db/schema";
 import { ensureAdminActivityTable } from "./admin-activity";
+import { getBillingMetricsUtc } from "./billing";
 
 /** Start of UTC calendar day (stable chart boundaries across timezones). */
 function utcDayStart(d: Date): Date {
@@ -37,6 +38,13 @@ export type AdminDashboardData = {
     emailDeliveryFailuresToday: number;
     /** Logged inbound ingest failures today (UTC day) */
     inboundEmailFailuresToday: number;
+    totalRevenue: number;
+    todayRevenueUtc: number;
+    thisMonthRevenueUtc: number;
+    businessEmailRevenue: number;
+    temporaryInboxRevenue: number;
+    totalPaidUsers: number;
+    failedPayments: number;
   };
   charts: {
     emailVolumeLast7Days: Array<{ label: string; sent: number; received: number }>;
@@ -159,6 +167,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
         )
       ),
   ]);
+  const billingMetrics = await getBillingMetricsUtc(now);
 
   let recentActivityRows: typeof adminActivityLogs.$inferSelect[] = [];
   let failedAdminLoginsHour = 0;
@@ -438,6 +447,13 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
       recentErrors24h,
       emailDeliveryFailuresToday: bounceEventsToday,
       inboundEmailFailuresToday,
+      totalRevenue: billingMetrics.totalRevenue,
+      todayRevenueUtc: billingMetrics.todayRevenueUtc,
+      thisMonthRevenueUtc: billingMetrics.thisMonthRevenueUtc,
+      businessEmailRevenue: billingMetrics.businessEmailRevenue,
+      temporaryInboxRevenue: billingMetrics.temporaryInboxRevenue,
+      totalPaidUsers: billingMetrics.totalPaidUsers,
+      failedPayments: billingMetrics.failedPayments,
     },
     charts: {
       emailVolumeLast7Days,
