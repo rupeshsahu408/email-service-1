@@ -1,0 +1,129 @@
+## 💳 Subscription System (Razorpay - Monthly Auto Pay)
+
+We will use **Razorpay Subscriptions** for Business Plan.
+
+---
+
+## 🎯 Plan Details
+
+* Plan Name: Sendora Business
+* Price: ₹199/month
+* Billing Cycle: Monthly (auto-renew)
+* Free Trial: Optional (can add later)
+
+---
+
+## 🔁 Subscription Flow
+
+1. User clicks “Upgrade to Business”
+2. Razorpay subscription checkout opens
+3. User completes payment (card / UPI / etc.)
+4. Subscription is created
+
+---
+
+## ✅ On First Payment Success
+
+* Upgrade user plan → "business"
+* Set:
+
+  * `plan = business`
+  * `status = active`
+  * `next_billing_date = +30 days`
+
+---
+
+## 🔄 Auto Renewal (Important)
+
+Every month:
+
+* Razorpay auto charges user
+* On success:
+
+  * Extend `next_billing_date` by 30 days
+
+---
+
+## ❌ If Payment Fails
+
+* Mark:
+
+  * `status = past_due`
+
+* Send user notification:
+
+  * “Payment failed, please update payment method”
+
+* After grace period (e.g. 3–5 days):
+
+  * Downgrade to free plan
+
+---
+
+## 🛑 Cancel Subscription (User Control)
+
+User must be able to cancel anytime.
+
+### From Settings Page:
+
+* Button: “Cancel Subscription”
+
+On click:
+
+* Cancel Razorpay subscription
+* Keep plan active until current billing period ends
+
+---
+
+## ⚙️ Settings Page (Subscription UI)
+
+Show:
+
+* Current Plan: Business
+* Status: Active
+* Next Billing Date
+* Price: ₹199/month
+
+Buttons:
+
+* Cancel Subscription
+* Update Payment Method
+
+---
+
+## 🔔 Webhooks (VERY IMPORTANT)
+
+Handle Razorpay events:
+
+* `subscription.activated`
+* `subscription.charged`
+* `payment.failed`
+* `subscription.cancelled`
+
+Use these to:
+
+* Update user plan
+* Maintain billing accuracy
+
+---
+
+## 🔐 Important Rules
+
+* User loses business features after expiry
+* Golden tick removed after plan ends
+* Custom domain access disabled (or limited)
+
+---
+
+## 💡 UX Notes
+
+* Show message:
+  “You can cancel anytime from settings”
+
+* Show trust:
+  “Secure payments powered by Razorpay”
+
+---
+
+End Goal:
+Simple, automatic, and user-controlled subscription system.

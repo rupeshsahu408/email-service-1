@@ -1,0 +1,62 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1774691605285,
+      "tag": "0000_lovely_rick_jones",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1774699983144,
+      "tag": "0001_aura_mail_upgrade",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1774704410793,
+      "tag": "0002_settings_and_filters",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1774720338120,
+      "tag": "0003_sessions_expires_idx",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1774800000000,
+      "tag": "0004_business_custom_domain",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1774835337771,
+      "tag": "0005_business_custom_domain",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1775069000000,
+      "tag": "0013_domain_management_phase4",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1775071273639,
+      "tag": "0014_auth_login_events_security_lock",
+      "breakpoints": true
+    }
+  ]
+}

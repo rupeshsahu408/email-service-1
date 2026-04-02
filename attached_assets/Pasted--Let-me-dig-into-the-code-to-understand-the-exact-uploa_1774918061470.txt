@@ -1,0 +1,52 @@
+
+Let me dig into the code to understand the exact upload and send flow before touching anything.
+
+Good overview. Now let me read the actual code carefully, especially the readAttachmentBuffer function and the send route.
+
+Now I have a thorough picture. Let me explain the root cause and the exact fix before touching anything.
+
+Root cause — two separate problems:
+
+Send flow crashes the whole email on any attachment failure. In send/route.ts (lines 202–229), readAttachmentBuffer is called inside the shared try/catch that wraps the entire send. If it throws for a PDF, the 502 error is returned and the email is never sent. There is no per-attachment error isolation.
+
+PDF read path uses the wrong Cloudinary endpoint first. In readAttachmentBuffer, for resource_type: "raw" (PDFs), the code first calls cloudinary.utils.private_download_url. That function is designed for Cloudinary's type: "private" assets — but the app uploads with type: "authenticated". Authenticated assets must be fetched via a signed CDN URL (cloudinary.url with sign_url: true), which is exactly what works for images. The private_download_url attempts fail (returning non-200), then the correct CDN signed URL is tried — but at that point it may also be failing for raw, unlike for images, possibly due to the extension being embedded in the public_id when signing.
+
+Fix plan:
+
+In attachments-storage.ts: For raw resources, try the CDN signed URL (cloudinary.url) first, before private_download_url. This mirrors the working image path.
+In send/route.ts: Wrap each individual draft attachment read in its own try/catch so a single failed PDF doesn't abort the entire send. Collect warnings and return them alongside the success response.
+Here are the exact diffs:
+
+Now I'll apply both fixes. Here are the exact changes:
+
+Fix 1 — attachments-storage.ts: Reorder the raw read path so the CDN signed URL (which works for images) is attempted first for raw assets too, with private_download_url kept as a secondary fallback.
+
+Fix 2 — send/route.ts: Wrap each draft attachment read individually so one failing PDF can't kill the whole send.
+
+Good. Now fix 2 — the send route:
+
+Now I need to include the warnings in the success responses so the frontend can show them. Let me update the two return paths:
+
+Now update both success return statements to include any attachment warnings:
+
+Good. Now let me verify the full send route is clean, then restart to test:
+
+The app is running cleanly. Here's a clear summary of everything that was changed and why:
+
+Root cause
+
+PDFs are stored in Cloudinary as resource_type: "raw", type: "authenticated". When reading them back, the code was calling private_download_url first — but that function is specifically designed for Cloudinary's type: "private" delivery model, not "authenticated". So those calls were failing. The correct path for authenticated assets is a signed CDN URL (the same cloudinary.url + sign_url: true approach that already works for images). The fallback eventually reached the right method, but because all those earlier failures still happen, something upstream may time out or the attempt just isn't reaching success reliably.
+
+Change 1 — src/lib/attachments-storage.ts
+
+Reordered the read loop: the CDN signed URL is now tried first for all asset types including raw/PDF, exactly mirroring the path that successfully serves images. The private_download_url call is kept as a secondary fallback for raw assets, not the primary attempt.
+
+Change 2 — src/app/api/mail/send/route.ts
+
+Wrapped each draft attachment read in its own try/catch. If a single PDF (or any file) can't be loaded from Cloudinary:
+
+The error is logged with full detail (storageKey, filename, mimeType, error message)
+That attachment is skipped with a warning message collected
+The email continues to send without it
+The success response includes a warnings array listing any skipped files so the frontend can surface them to the user
+No other behaviour was changed — images, internal delivery, external Resend delivery, and all cleanup logic are all exactly as before.
