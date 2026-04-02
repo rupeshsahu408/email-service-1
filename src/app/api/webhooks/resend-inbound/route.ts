@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { AttachmentData } from "resend";
-import { eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import { attachments, messageLabels, messages } from "@/db/schema";
 import { getEmailDomain } from "@/lib/constants";
@@ -31,7 +31,9 @@ import { ensureUserSettingsRow } from "@/lib/user-settings";
 import {
   getUserStorageSnapshotByUserId,
   isStorageFull,
+  mailboxMessageContentBytesExpr,
 } from "@/lib/storage-quota";
+import { getAdminSystemSettings } from "@/lib/admin-system-settings";
 
 export const runtime = "nodejs";
 
@@ -83,6 +85,7 @@ function toArray(val: string | string[] | undefined | null): string[] {
 }
 
 export async function POST(request: NextRequest) {
+  const settings = await getAdminSystemSettings();
   logInfo("resend_webhook_received", { url: request.url });
 
   let payload: string;
@@ -290,18 +293,51 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      const settings = await ensureUserSettingsRow(userId);
+      const userSettings = await ensureUserSettingsRow(userId);
       let userHtml = bodyHtml;
       if (userHtml) {
         userHtml = stripTrackingFromHtml(userHtml, {
-          blockTrackers: settings.blockTrackers,
-          externalImages: settings.externalImages as "always" | "ask" | "never",
+          blockTrackers: userSettings.blockTrackers,
+          externalImages: userSettings.externalImages as "always" | "ask" | "never",
         });
       }
       const userBodyText =
         bodyText ||
         (userHtml ? plainTextFromHtml(userHtml) : "") ||
         (subject ? `(no body) ${subject}` : "(no body)");
+
+      const [inboxTextRows, inboxAttRows] = await Promise.all([
+        getDb()
+          .select({
+            bytes: mailboxMessageContentBytesExpr(messages),
+          })
+          .from(messages)
+          .where(and(eq(messages.userId, userId), eq(messages.folder, "inbox"))),
+        getDb()
+          .select({
+            bytes: sql<number>`coalesce(sum(${attachments.sizeBytes}), 0)::bigint`,
+          })
+          .from(attachments)
+          .innerJoin(messages, eq(attachments.messageId, messages.id))
+          .where(and(eq(messages.userId, userId), eq(messages.folder, "inbox"))),
+      ]);
+      const inboxTextBytes = inboxTextRows.reduce(
+        (sum, r) => sum + Number(r.bytes ?? 0),
+        0
+      );
+      const inboxAttBytes = Number(inboxAttRows[0]?.bytes ?? 0);
+      const incomingBytes =
+        Buffer.byteLength(subject, "utf8") +
+        Buffer.byteLength(userBodyText, "utf8") +
+        Buffer.byteLength(userHtml ?? "", "utf8") +
+        attachmentBuffers.reduce((s, a) => s + a.buf.length, 0);
+      if (inboxTextBytes + inboxAttBytes + incomingBytes > settings.limits.maxInboxSizeBytes) {
+        logWarn("resend_inbound_skipped_inbox_limit", {
+          userId,
+          maxInboxSizeBytes: settings.limits.maxInboxSizeBytes,
+        });
+        continue;
+      }
 
       const threadId = await resolveInboundThreadId(userId, inReplyTo);
       const disposition = await getInboundDisposition(userId, fromAddr);

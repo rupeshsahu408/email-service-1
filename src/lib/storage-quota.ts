@@ -116,10 +116,13 @@ export function storageLimitBytesForPlan(plan: EffectivePlan): number {
 export function getStorageLimitBytes(
   user: Pick<
     typeof users.$inferSelect,
-    "plan" | "planExpiresAt" | "planStatus"
+    "plan" | "planExpiresAt" | "planStatus" | "storageQuotaBytes"
   >
 ): number {
-  return storageLimitBytesForPlan(getEffectivePlan(user));
+  const planLimit = storageLimitBytesForPlan(getEffectivePlan(user));
+  const userQuota = Number(user.storageQuotaBytes ?? 0);
+  if (!Number.isFinite(userQuota) || userQuota <= 0) return planLimit;
+  return Math.min(planLimit, userQuota);
 }
 
 export type UserStorageBreakdown = {
@@ -356,6 +359,7 @@ export async function getUserStorageSnapshotByUserId(
       plan: users.plan,
       planExpiresAt: users.planExpiresAt,
       planStatus: users.planStatus,
+      storageQuotaBytes: users.storageQuotaBytes,
     })
     .from(users)
     .where(eq(users.id, userId))
@@ -368,11 +372,11 @@ export async function getUserStorageSnapshot(
   db: DbClient,
   user: Pick<
     typeof users.$inferSelect,
-    "id" | "plan" | "planExpiresAt" | "planStatus"
+    "id" | "plan" | "planExpiresAt" | "planStatus" | "storageQuotaBytes"
   >
 ): Promise<UserStorageSnapshot> {
   const effectivePlan = getEffectivePlan(user);
-  const limitBytes = storageLimitBytesForPlan(effectivePlan);
+  const limitBytes = getStorageLimitBytes(user);
   const { usedBytes, messageCount, breakdown } =
     await computeUserStorageUsedBytes(db, user.id);
   return {

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { randomUUID } from "crypto";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, count, eq, gte, inArray } from "drizzle-orm";
 import { getDb } from "@/db";
-import { anonymousSendAliases, attachments, composeAttachments, composeDrafts } from "@/db/schema";
+import { anonymousSendAliases, attachments, composeAttachments, composeDrafts, messages } from "@/db/schema";
 import {
   formatAnonymousOutboundFrom,
   generateAnonymousAliasLocalPart,
@@ -37,6 +37,8 @@ import {
   getUserStorageSnapshot,
   isStorageFull,
 } from "@/lib/storage-quota";
+import { getAdminSystemSettings } from "@/lib/admin-system-settings";
+import { enforceApiUsageLimitForUser } from "@/lib/api-usage-limit";
 
 const sendJsonSchema = z.object({
   to: z.string().email(),
@@ -101,6 +103,14 @@ export async function POST(request: NextRequest) {
   const user = await getCurrentUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const settings = await getAdminSystemSettings();
+  const apiLimit = await enforceApiUsageLimitForUser(user.id);
+  if (!apiLimit.allowed) {
+    return NextResponse.json(
+      { error: "API request limit reached for today." },
+      { status: 429 }
+    );
   }
 
   const { success } = await rateLimitSend(user.id);
@@ -187,6 +197,23 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const sentTodayRows = await getDb()
+    .select({ c: count() })
+    .from(messages)
+    .where(
+      and(
+        eq(messages.userId, user.id),
+        eq(messages.folder, "sent"),
+        gte(messages.createdAt, new Date(new Date().setUTCHours(0, 0, 0, 0)))
+      )
+    );
+  if (Number(sentTodayRows[0]?.c ?? 0) >= settings.limits.maxEmailsPerDayPerUser) {
+    return NextResponse.json(
+      { error: "Daily email sending limit reached." },
+      { status: 429 }
+    );
+  }
+
   const rawText = text.trim();
   const sourceHtml = html?.trim() ? html : undefined;
   // When HTML is present, derive plain text from the HTML so the `text` field
@@ -226,6 +253,15 @@ export async function POST(request: NextRequest) {
           user,
           mailboxId: sendAnonymously ? null : (mailboxId ?? null),
         });
+  if (!mailboxId && !sendAnonymously) {
+    const requiredDomain = settings.email.defaultSendingDomain.toLowerCase();
+    if (!from.toLowerCase().includes(`@${requiredDomain}`)) {
+      return NextResponse.json(
+        { error: `Default sender domain must be ${requiredDomain}.` },
+        { status: 400 }
+      );
+    }
+  }
   const ccJoined = ccList.join(", ");
   const bccJoined = bccList.join(", ");
 
@@ -234,6 +270,9 @@ export async function POST(request: NextRequest) {
       uploadFiles.length > 0
         ? await Promise.all(
             uploadFiles.map(async (f) => {
+                if (f.size > settings.email.maxAttachmentSizeBytes) {
+                  throw new Error("Attachment exceeds configured size limit.");
+                }
                 const buf = Buffer.from(await f.arrayBuffer()) as unknown as Buffer<ArrayBufferLike>;
               return {
                 file: f,
@@ -264,6 +303,12 @@ export async function POST(request: NextRequest) {
         );
 
       for (const row of draftRows) {
+        if (Number(row.sizeBytes ?? 0) > settings.email.maxAttachmentSizeBytes) {
+          return NextResponse.json(
+            { error: `Attachment "${row.filename}" exceeds configured size limit.` },
+            { status: 400 }
+          );
+        }
         const keyType = classifyAttachmentStorageKey(row.storageKey);
         let buf: Buffer;
         try {
@@ -339,6 +384,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: STORAGE_MESSAGE_FULL, code: STORAGE_ERROR_CODE },
         { status: 403 }
+      );
+    }
+    const totalAttachmentBytes = filePayload.reduce((sum, p) => sum + p.buf.length, 0);
+    const messageBytes =
+      Buffer.byteLength(subject || "", "utf8") +
+      Buffer.byteLength(outText || "", "utf8") +
+      Buffer.byteLength(outHtml || "", "utf8") +
+      totalAttachmentBytes;
+    if (messageBytes > settings.email.maxEmailSizeBytes) {
+      return NextResponse.json(
+        { error: "Email size exceeds configured maximum." },
+        { status: 400 }
       );
     }
 

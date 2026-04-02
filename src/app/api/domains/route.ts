@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { desc, eq } from "drizzle-orm";
+import { count, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { getDb } from "@/db";
 import { domains } from "@/db/schema";
@@ -13,6 +13,8 @@ import { recordAdminActivity } from "@/lib/admin-activity";
 import { fetchCheckStatusesForDomains } from "@/lib/admin-domains";
 import { recordDomainActivity } from "@/lib/domain-activity";
 import { runDomainDnsPipeline } from "@/lib/domain-state";
+import { getAdminSystemSettings } from "@/lib/admin-system-settings";
+import { enforceApiUsageLimitForUser } from "@/lib/api-usage-limit";
 
 const DOMAIN_RE =
   /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$/i;
@@ -35,6 +37,14 @@ export async function GET() {
     return NextResponse.json(
       { error: gate.error, code: gate.code },
       { status: gate.status }
+    );
+  }
+
+  const apiLimit = await enforceApiUsageLimitForUser(ctx.user.id);
+  if (!apiLimit.allowed) {
+    return NextResponse.json(
+      { error: "API request limit reached for today." },
+      { status: 429 }
     );
   }
 
@@ -71,6 +81,26 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { error: gate.error, code: gate.code },
       { status: gate.status }
+    );
+  }
+
+  const apiLimit = await enforceApiUsageLimitForUser(ctx.user.id);
+  if (!apiLimit.allowed) {
+    return NextResponse.json(
+      { error: "API request limit reached for today." },
+      { status: 429 }
+    );
+  }
+
+  const settings = await getAdminSystemSettings();
+  const domainCountRows = await getDb()
+    .select({ c: count() })
+    .from(domains)
+    .where(eq(domains.ownerUserId, ctx.user.id));
+  if (Number(domainCountRows[0]?.c ?? 0) >= settings.limits.maxDomainsPerUser) {
+    return NextResponse.json(
+      { error: "Domain limit reached for this account." },
+      { status: 403 }
     );
   }
 

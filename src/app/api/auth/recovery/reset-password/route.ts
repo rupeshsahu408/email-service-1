@@ -7,6 +7,7 @@ import { sessions, users } from "@/db/schema";
 import { hashSecret } from "@/lib/password";
 import { getClientIp, rateLimitRecoveryReset } from "@/lib/rate-limit";
 import { ensurePasswordResetColumns, sha256Hex } from "@/lib/password-reset";
+import { getAdminSystemSettings } from "@/lib/admin-system-settings";
 
 const bodySchema = z.object({
   username: z.string().min(1).max(64),
@@ -26,6 +27,7 @@ function safeEqHex(a: string, b: string): boolean {
 }
 
 export async function POST(request: NextRequest) {
+  const settings = await getAdminSystemSettings();
   const ip = getClientIp(request.headers);
   const { success } = await rateLimitRecoveryReset(ip);
   if (!success) {
@@ -45,6 +47,12 @@ export async function POST(request: NextRequest) {
   const parsed = bodySchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid input" }, { status: 400 });
+  }
+  if (parsed.data.newPassword.length < settings.security.minPasswordLength) {
+    return NextResponse.json(
+      { error: `Password must be at least ${settings.security.minPasswordLength} characters.` },
+      { status: 400 }
+    );
   }
 
   await ensurePasswordResetColumns();

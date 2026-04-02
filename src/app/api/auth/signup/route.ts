@@ -14,6 +14,7 @@ import {
 import { verifyTurnstileToken } from "@/lib/turnstile";
 import { signupBodySchema } from "@/lib/validation";
 import { recordAdminActivity } from "@/lib/admin-activity";
+import { getAdminSystemSettings } from "@/lib/admin-system-settings";
 
 function readErrorCode(err: unknown): string | undefined {
   if (!err || typeof err !== "object") return undefined;
@@ -22,6 +23,17 @@ function readErrorCode(err: unknown): string | undefined {
 }
 
 export async function POST(request: NextRequest) {
+  const settings = await getAdminSystemSettings();
+  if (!settings.features.signupEnabled) {
+    return NextResponse.json(
+      { error: "New signups are currently disabled." },
+      { status: 503 }
+    );
+  }
+  if (settings.maintenance.enabled) {
+    return NextResponse.json({ error: settings.maintenance.message }, { status: 503 });
+  }
+
   const ip = getClientIp(request.headers);
   const { success } = await rateLimitSignup(ip);
   if (!success) {
@@ -42,6 +54,12 @@ export async function POST(request: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json(
       { error: parsed.error.issues[0]?.message ?? "Invalid input" },
+      { status: 400 }
+    );
+  }
+  if (parsed.data.password.length < settings.security.minPasswordLength) {
+    return NextResponse.json(
+      { error: `Password must be at least ${settings.security.minPasswordLength} characters.` },
       { status: 400 }
     );
   }
@@ -79,6 +97,10 @@ export async function POST(request: NextRequest) {
         localPart: username,
         passwordHash,
         recoveryKeyHash,
+        storageQuotaBytes:
+          settings.storage.perUserStorageLimitBytes > 0
+            ? settings.storage.perUserStorageLimitBytes
+            : undefined,
       })
       .returning({ id: users.id });
     if (inserted.length === 0) {

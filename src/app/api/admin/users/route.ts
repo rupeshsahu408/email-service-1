@@ -16,6 +16,7 @@ import {
 } from "@/lib/admin-users";
 import { recordAdminActivity } from "@/lib/admin-activity";
 import { randomBytes } from "crypto";
+import { getAdminSystemSettings } from "@/lib/admin-system-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -102,6 +103,13 @@ export async function POST(request: NextRequest) {
   }
 
   const d = parsed.data;
+  const settings = await getAdminSystemSettings();
+  if (d.password.length < settings.security.minPasswordLength) {
+    return NextResponse.json(
+      { error: `Password must be at least ${settings.security.minPasswordLength} characters.` },
+      { status: 400 }
+    );
+  }
   const emailNorm = d.email.trim().toLowerCase();
   const domain = getEmailDomain().toLowerCase();
   const at = emailNorm.lastIndexOf("@");
@@ -159,6 +167,10 @@ export async function POST(request: NextRequest) {
       suspendedAt: isSuspended ? now : null,
       suspensionReason: isSuspended ? "Created as suspended" : null,
       accountType: d.accountType,
+      storageQuotaBytes:
+        settings.storage.perUserStorageLimitBytes > 0
+          ? settings.storage.perUserStorageLimitBytes
+          : undefined,
       updatedAt: now,
     })
     .returning({ id: users.id });

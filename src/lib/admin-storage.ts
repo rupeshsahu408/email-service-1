@@ -8,6 +8,7 @@ import {
   STORAGE_WARN_RATIO_80,
   STORAGE_WARN_RATIO_95,
 } from "@/lib/storage-quota";
+import { getAdminSystemSettings } from "@/lib/admin-system-settings";
 
 export type AdminCleanupAction =
   | "empty_all_trash"
@@ -69,12 +70,16 @@ function cleanupWhere(action: AdminCleanupAction, days?: number) {
   )`;
 }
 
-function usageState(used: number, capacity: number): AdminStorageOverview["warningState"] {
+function usageState(
+  used: number,
+  capacity: number,
+  warningThresholdPercent: number
+): AdminStorageOverview["warningState"] {
   if (capacity <= 0) return "ok";
   if (used >= capacity) return "full";
   const ratio = used / capacity;
   if (ratio >= STORAGE_WARN_RATIO_95) return "warning95";
-  if (ratio >= STORAGE_WARN_RATIO_80) return "warning80";
+  if (ratio >= Math.max(STORAGE_WARN_RATIO_80, warningThresholdPercent / 100)) return "warning80";
   return "ok";
 }
 
@@ -210,6 +215,9 @@ export async function getAdminStorageOverview(): Promise<AdminStorageOverview> {
   ]);
 
   const totalCapacityBytes = toNumber(capacityRow[0]?.bytes);
+  const settings = await getAdminSystemSettings();
+  const configuredCapacity = settings.storage.totalStorageLimitBytes;
+  const effectiveCapacity = configuredCapacity > 0 ? configuredCapacity : totalCapacityBytes;
   const composeDraftBytes = toNumber(
     firstRowValue(composeDraftRow as unknown as Array<Record<string, unknown>>, "bytes")
   );
@@ -235,9 +243,9 @@ export async function getAdminStorageOverview(): Promise<AdminStorageOverview> {
     scheduledAttachmentBytes +
     confidentialBytes +
     tempInboxBytes;
-  const totalFreeBytes = Math.max(totalCapacityBytes - totalUsedBytes, 0);
+  const totalFreeBytes = Math.max(effectiveCapacity - totalUsedBytes, 0);
   const usagePercent =
-    totalCapacityBytes > 0 ? Math.round((totalUsedBytes / totalCapacityBytes) * 1000) / 10 : 0;
+    effectiveCapacity > 0 ? Math.round((totalUsedBytes / effectiveCapacity) * 1000) / 10 : 0;
 
   const topUsers = (topUsersRows as unknown as Array<Record<string, unknown>>).map((row) => ({
     userId: String(row.user_id ?? ""),
@@ -246,11 +254,15 @@ export async function getAdminStorageOverview(): Promise<AdminStorageOverview> {
   }));
 
   return {
-    totalCapacityBytes,
+    totalCapacityBytes: effectiveCapacity,
     totalUsedBytes,
     totalFreeBytes,
     usagePercent,
-    warningState: usageState(totalUsedBytes, totalCapacityBytes),
+    warningState: usageState(
+      totalUsedBytes,
+      effectiveCapacity,
+      settings.storage.warningThresholdPercent
+    ),
     breakdown: {
       inboxBytes: toNumber(inboxRow[0]?.bytes),
       sentBytes: toNumber(sentRow[0]?.bytes),

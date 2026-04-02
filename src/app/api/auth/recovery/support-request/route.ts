@@ -8,6 +8,7 @@ import {
   rateLimitRecoverySupport,
   rateLimitRecoverySupportByKey,
 } from "@/lib/rate-limit";
+import { getAdminSystemSettings } from "@/lib/admin-system-settings";
 
 const bodySchema = z.object({
   username: z.string().max(64).optional().default(""),
@@ -16,6 +17,7 @@ const bodySchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  const adminSettings = await getAdminSystemSettings();
   const ip = getClientIp(request.headers);
   const { success } = await rateLimitRecoverySupport(ip);
   if (!success) {
@@ -58,8 +60,8 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const to = "support.studyhelp@gmail.com";
-  const from = `Sendora <no-reply@${getEmailDomain()}>`;
+  const to = adminSettings.general.supportEmail;
+  const from = `${adminSettings.general.appName} <${adminSettings.email.defaultSenderEmail || `no-reply@${getEmailDomain()}`}>`;
   const subject = "[Password Recovery] No-backup support request";
   const timestamp = new Date().toISOString();
   const text = [

@@ -6,6 +6,7 @@ import { getDb } from "@/db";
 import { browserAccountLinks, sessions, users } from "@/db/schema";
 import { sha256Hex } from "./hash";
 import { ACCOUNT_BUNDLE_COOKIE, ADMIN_SESSION_COOKIE, SESSION_COOKIE } from "./constants";
+import { getAdminSystemSettings } from "@/lib/admin-system-settings";
 
 /** Session lifetime: 30 days. */
 export const SESSION_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
@@ -236,7 +237,17 @@ export async function issueSession(
 ): Promise<IssuedSession> {
   const token = randomBytes(32).toString("hex");
   const tokenHash = hashSessionToken(token);
-  const expiresAt = new Date(Date.now() + SESSION_MAX_AGE_SECONDS * 1000);
+  let ttlSeconds = SESSION_MAX_AGE_SECONDS;
+  try {
+    const settings = await getAdminSystemSettings();
+    ttlSeconds = Math.max(
+      300,
+      Math.floor(settings.security.sessionTimeoutMinutes * 60)
+    );
+  } catch {
+    ttlSeconds = SESSION_MAX_AGE_SECONDS;
+  }
+  const expiresAt = new Date(Date.now() + ttlSeconds * 1000);
   const now = new Date();
   await getDb().insert(sessions).values({
     userId,
@@ -255,9 +266,13 @@ export function attachSessionCookie(
   token: string,
   expiresAt: Date
 ) {
+  const maxAge = Math.max(
+    1,
+    Math.floor((expiresAt.getTime() - Date.now()) / 1000)
+  );
   res.cookies.set(SESSION_COOKIE, token, {
     ...sessionCookieBase(),
-    maxAge: SESSION_MAX_AGE_SECONDS,
+    maxAge,
     expires: expiresAt,
   });
 }
@@ -268,9 +283,13 @@ export function attachAdminSessionCookie(
   token: string,
   expiresAt: Date
 ) {
+  const maxAge = Math.max(
+    1,
+    Math.floor((expiresAt.getTime() - Date.now()) / 1000)
+  );
   res.cookies.set(ADMIN_SESSION_COOKIE, token, {
     ...sessionCookieBase(),
-    maxAge: SESSION_MAX_AGE_SECONDS,
+    maxAge,
     expires: expiresAt,
   });
 }
@@ -361,6 +380,14 @@ async function queryAuthContext(tokenHash: string): Promise<AuthContext | null> 
   if (user.isSuspended || user.deletedAt) {
     await getDb().delete(sessions).where(eq(sessions.id, session.id));
     return null;
+  }
+  try {
+    const settings = await getAdminSystemSettings();
+    if (settings.maintenance.enabled && !user.isAdmin) {
+      return null;
+    }
+  } catch {
+    // ignore settings read failure for auth context
   }
 
   const now = new Date();

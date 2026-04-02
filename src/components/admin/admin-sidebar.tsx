@@ -34,6 +34,9 @@ export function AdminSidebar() {
         <Link href="/admin/security" className={linkClass(pathname === "/admin/security")}>
           Security
         </Link>
+        <Link href="/admin/settings" className={linkClass(pathname === "/admin/settings")}>
+          Settings
+        </Link>
       </nav>
     </aside>
   );

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { and, count, eq, gte } from "drizzle-orm";
 import { getDb } from "@/db";
-import { users } from "@/db/schema";
+import { authLoginEvents, users } from "@/db/schema";
 import { logError, logInfo } from "@/lib/logger";
 import { verifySecret } from "@/lib/password";
 import { getClientIp } from "@/lib/rate-limit";
@@ -18,9 +18,11 @@ import { recordAdminActivity } from "@/lib/admin-activity";
 import { recordAuthLoginEvent } from "@/lib/auth-login-audit";
 import { fetchSecurityLockIfExists } from "@/lib/auth-login-schema-compat";
 import { isSecurityLocked } from "@/lib/auth-security-lock";
+import { getAdminSystemSettings } from "@/lib/admin-system-settings";
 
 export async function POST(request: NextRequest) {
   try {
+    const settings = await getAdminSystemSettings();
     await ensureSessionSchema();
     const ua = request.headers.get("user-agent") ?? undefined;
     const ipHint = getClientIp(request.headers);
@@ -74,6 +76,31 @@ export async function POST(request: NextRequest) {
     }
 
     const user = rows[0];
+    if (settings.maintenance.enabled && !user.isAdmin) {
+      return NextResponse.json(
+        { error: settings.maintenance.message },
+        { status: 503 }
+      );
+    }
+
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const failedRows = await getDb()
+      .select({ c: count() })
+      .from(authLoginEvents)
+      .where(
+        and(
+          eq(authLoginEvents.userId, user.id),
+          eq(authLoginEvents.outcome, "failed"),
+          gte(authLoginEvents.createdAt, since)
+        )
+      );
+    const failedCount = Number(failedRows[0]?.c ?? 0);
+    if (failedCount >= settings.security.maxLoginAttempts) {
+      return NextResponse.json(
+        { error: "Too many failed attempts. Try again later or reset your password." },
+        { status: 429 }
+      );
+    }
     const lock = await fetchSecurityLockIfExists(user.id);
     const userWithLock = { ...user, securityLockedUntil: lock.securityLockedUntil };
 

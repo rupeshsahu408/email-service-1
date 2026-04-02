@@ -12,6 +12,7 @@ import {
   getUserMailboxAddress,
 } from "@/lib/constants";
 import { isBusinessPlan } from "@/lib/plan";
+import { getAdminSystemSettings } from "@/lib/admin-system-settings";
 
 export type ResolvedFrom = {
   from: string;
@@ -28,6 +29,7 @@ export async function resolveSendFromForUser(args: {
 }): Promise<ResolvedFrom> {
   const { user, mailboxId } = args;
   const db = getDb();
+  const systemSettings = await getAdminSystemSettings();
   // Professional is intentionally disabled; ignore any `pro:` mailbox selection.
   const PROFESSIONAL_DISABLED = true;
 
@@ -133,7 +135,7 @@ export async function resolveSendFromForUser(args: {
   }
 
   return {
-    from: getOutboundFromAddress(user.localPart),
+    from: `${user.localPart} via ${systemSettings.general.appName} <${systemSettings.email.defaultSenderEmail}>`,
     replyTo: getUserMailboxAddress(user.localPart),
   };
 }

@@ -1,6 +1,7 @@
-import { and, eq, lte, sql } from "drizzle-orm";
+import { and, eq, lte, or, sql } from "drizzle-orm";
 import { messages } from "@/db/schema";
 import type { DbClient } from "@/lib/storage-quota";
+import { getAdminSystemSettings } from "@/lib/admin-system-settings";
 
 export const TRASH_RETENTION_DAYS = 30;
 export const TRASH_RETENTION_MS = TRASH_RETENTION_DAYS * 24 * 60 * 60 * 1000;
@@ -36,9 +37,20 @@ export async function deleteExpiredTrashMessages(
   userId?: string
 ): Promise<number> {
   const now = new Date();
+  let retentionDays = TRASH_RETENTION_DAYS;
+  try {
+    const settings = await getAdminSystemSettings();
+    retentionDays = Math.max(1, settings.cleanupRules.autoDeleteTrashDays);
+  } catch {
+    retentionDays = TRASH_RETENTION_DAYS;
+  }
+  const dynamicCutoff = new Date(now.getTime() - retentionDays * 24 * 60 * 60 * 1000);
   const whereBase = and(
     eq(messages.folder, "trash"),
-    lte(messages.trashDeleteAfterAt, now)
+    or(
+      lte(messages.trashDeleteAfterAt, now),
+      lte(messages.trashMovedAt, dynamicCutoff)
+    )
   );
   if (!whereBase) return 0;
   const whereClause = userId
@@ -54,13 +66,27 @@ export async function deleteExpiredTrashMessages(
 
 export async function countExpiredTrashMessages(db: DbClient): Promise<number> {
   const now = new Date();
+  let retentionDays = TRASH_RETENTION_DAYS;
+  try {
+    const settings = await getAdminSystemSettings();
+    retentionDays = Math.max(1, settings.cleanupRules.autoDeleteTrashDays);
+  } catch {
+    retentionDays = TRASH_RETENTION_DAYS;
+  }
+  const dynamicCutoff = new Date(now.getTime() - retentionDays * 24 * 60 * 60 * 1000);
   const rows = await db
     .select({
       n: sql<number>`count(*)::int`,
     })
     .from(messages)
     .where(
-      and(eq(messages.folder, "trash"), lte(messages.trashDeleteAfterAt, now))
+      and(
+        eq(messages.folder, "trash"),
+        or(
+          lte(messages.trashDeleteAfterAt, now),
+          lte(messages.trashMovedAt, dynamicCutoff)
+        )
+      )
     );
   return Number(rows[0]?.n ?? 0);
 }
