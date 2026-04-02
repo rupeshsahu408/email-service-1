@@ -15,6 +15,7 @@ import { verifyTurnstileToken } from "@/lib/turnstile";
 import { signupBodySchema } from "@/lib/validation";
 import { recordAdminActivity } from "@/lib/admin-activity";
 import { getAdminSystemSettings } from "@/lib/admin-system-settings";
+import { sendWelcomeEmail, welcomeDisplayName } from "@/lib/transactional-email";
 
 function readErrorCode(err: unknown): string | undefined {
   if (!err || typeof err !== "object") return undefined;
@@ -141,6 +142,12 @@ export async function POST(request: NextRequest) {
     subjectUserId: userId,
     detail: "New user account created.",
     meta: { username },
+  });
+
+  void sendWelcomeEmail({
+    to: formatUserEmail(username),
+    name: welcomeDisplayName(username),
+    userId,
   });
 
   const res = NextResponse.json({
