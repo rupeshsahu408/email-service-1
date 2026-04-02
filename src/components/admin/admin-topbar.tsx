@@ -25,7 +25,7 @@ export function AdminTopbar({ email }: Props) {
     <header className="flex items-center justify-between border-b border-[#ece9fb] bg-white px-4 py-3 md:px-6">
       <div>
         <h1 className="text-base font-semibold text-[#1c1b33] md:text-lg">{title}</h1>
-        <p className="text-xs text-[#777394]">Secure admin workspace</p>
+        <p className="text-xs font-medium text-[#595573]">Secure admin workspace</p>
       </div>
       <AdminProfileMenu email={email} />
     </header>

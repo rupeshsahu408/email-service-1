@@ -12,6 +12,7 @@ import {
 } from "@/db/schema";
 import { ensureAdminActivityTable } from "./admin-activity";
 import { getBillingMetricsUtc } from "./billing";
+import { getAdminStorageOverview } from "./admin-storage";
 
 /** Start of UTC calendar day (stable chart boundaries across timezones). */
 function utcDayStart(d: Date): Date {
@@ -45,6 +46,24 @@ export type AdminDashboardData = {
     temporaryInboxRevenue: number;
     totalPaidUsers: number;
     failedPayments: number;
+  };
+  storage: {
+    totalCapacityBytes: number;
+    totalUsedBytes: number;
+    totalFreeBytes: number;
+    usagePercent: number;
+    warningState: "ok" | "warning80" | "warning95" | "full";
+    breakdown: {
+      inboxBytes: number;
+      sentBytes: number;
+      trashBytes: number;
+      attachmentBytes: number;
+    };
+    topUsers: Array<{
+      userId: string;
+      email: string;
+      usedBytes: number;
+    }>;
   };
   charts: {
     emailVolumeLast7Days: Array<{ label: string; sent: number; received: number }>;
@@ -168,6 +187,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
       ),
   ]);
   const billingMetrics = await getBillingMetricsUtc(now);
+  const storage = await getAdminStorageOverview();
 
   let recentActivityRows: typeof adminActivityLogs.$inferSelect[] = [];
   let failedAdminLoginsHour = 0;
@@ -459,6 +479,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
       emailVolumeLast7Days,
       userGrowthLast7Days,
     },
+    storage,
     recentActivity,
     alerts,
     systemStatus,

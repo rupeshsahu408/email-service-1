@@ -5,8 +5,8 @@ import { usePathname } from "next/navigation";
 
 function linkClass(active: boolean) {
   return active
-    ? "block rounded-lg bg-[#f7f4ff] px-3 py-2 text-sm font-medium text-[#5b3dff]"
-    : "block rounded-lg px-3 py-2 text-sm font-medium text-[#555370] hover:bg-[#f4f2fb]";
+    ? "block rounded-lg bg-[#f1ecff] px-3 py-2 text-sm font-semibold text-[#452dc9]"
+    : "block rounded-lg px-3 py-2 text-sm font-medium text-[#2f2a4c] hover:bg-[#f4f2fb]";
 }
 
 export function AdminSidebar() {
@@ -18,7 +18,7 @@ export function AdminSidebar() {
         <img src="/sendora-logo.png" alt="Sendora" className="h-8 w-8 object-contain" />
         <div>
           <p className="text-sm font-bold text-[#1c1b33]">Sendora Admin</p>
-          <p className="text-xs text-[#777394]">Operations</p>
+          <p className="text-xs text-[#5d587a]">Operations</p>
         </div>
       </div>
       <nav className="space-y-1">
