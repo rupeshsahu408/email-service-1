@@ -484,14 +484,14 @@ function SidebarItem({
     <button
       type="button"
       onClick={onClick}
-      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all text-left ${
+      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-[color,background-color,box-shadow] duration-150 text-left ${
         active
-          ? "bg-[#6d4aff]/25 text-white"
-          : "text-[#c5c3d8] hover:bg-white/[0.06] hover:text-white"
+          ? "bg-[var(--sidebar-active)] text-white shadow-[inset_2px_0_0_0_rgba(167,139,250,0.85)]"
+          : "text-[var(--sidebar-text)] hover:bg-[var(--sidebar-hover)] hover:text-white"
       } ${collapsed ? "justify-center" : ""}`}
       title={collapsed ? label : undefined}
     >
-      <span className={active ? "text-[#a78bfa]" : "text-[#8b87a8]"}>{icon}</span>
+      <span className={active ? "text-[#c4b5fd]" : "text-[#8b87a8]"}>{icon}</span>
       {!collapsed && <span className="flex-1 truncate">{label}</span>}
       {!collapsed && badge != null && badge > 0 && (
         <span className="text-[10px] font-bold bg-[#6d4aff] text-white rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
@@ -1602,37 +1602,40 @@ export function InboxClient({
 
   // ── RENDER ──────────────────────────────────────────────────────
   return (
-    <div className="flex h-[100dvh] overflow-hidden bg-[#f3f0fd]">
+    <div className="flex h-[100dvh] overflow-hidden bg-[var(--background)] text-[var(--foreground)]">
 
       {/* Mobile sidebar overlay */}
       {mobileSidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 md:hidden"
+          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px] md:hidden transition-opacity"
           onClick={() => setMobileSidebarOpen(false)}
+          aria-hidden
         />
       )}
 
       {/* ── SIDEBAR ── */}
       <aside
-        className={`fixed md:relative z-50 md:z-auto h-full flex flex-col shrink-0 transition-[width,transform] duration-200 ease-out md:translate-x-0 ${
+        className={`fixed md:relative z-50 md:z-auto h-full flex flex-col shrink-0 transition-[width,transform] duration-200 ease-out md:translate-x-0 border-r border-[var(--sidebar-border)] shadow-[4px_0_32px_-12px_rgba(0,0,0,0.45)] ${
           mobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
-        style={{ width: sidebarWidth, background: "#1c1b33" }}
+        style={{ width: sidebarWidth, background: "var(--sidebar-bg)" }}
       >
-        <a
-          href="https://sendora.me/inbox"
-          className={`flex items-center gap-2.5 pt-5 pb-4 ${sidebarCollapsed ? "px-5 justify-center" : "px-5"}`}
+        <Link
+          href="/inbox"
+          aria-label="Sendora"
+          className={`flex items-center gap-2.5 pt-5 pb-4 outline-none focus-visible:ring-2 focus-visible:ring-[#a78bfa]/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--sidebar-bg)] rounded-lg mx-2 ${sidebarCollapsed ? "px-3 justify-center" : "px-3"}`}
+          onClick={() => setMobileSidebarOpen(false)}
         >
-          <img src="/sendora-logo.png" alt="Sendora" className="w-7 h-7 object-contain shrink-0" />
+          <img src="/sendora-logo.png" alt="" className="w-7 h-7 object-contain shrink-0 pointer-events-none" aria-hidden />
           {!sidebarCollapsed && (
-            <span className="text-white font-bold text-[14px] tracking-tight">Sendora</span>
+            <span className="text-white font-bold text-sm tracking-tight">Sendora</span>
           )}
-        </a>
+        </Link>
 
         <div className="px-3 pb-4">
           <button
             onClick={() => { setComposeReplySeed(null); setComposeOpen(true); setMobileSidebarOpen(false); }}
-            className={`w-full rounded-full py-2.5 text-sm font-semibold text-white transition-all hover:opacity-90 active:scale-95 ${sidebarCollapsed ? "px-0" : ""}`}
+            className={`w-full rounded-full py-2.5 text-sm font-semibold text-white transition-[transform,opacity,box-shadow] hover:opacity-95 hover:shadow-lg hover:shadow-[#5b3dff]/35 active:scale-[0.98] ${sidebarCollapsed ? "px-0" : ""}`}
             style={{ background: "linear-gradient(135deg, #7d5fff 0%, #5b3dff 100%)" }}
             title={sidebarCollapsed ? "New message" : undefined}
           >
@@ -1818,9 +1821,9 @@ export function InboxClient({
             </div>
           )}
           {!sidebarCollapsed && (
-            <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
-              <div className="flex items-center gap-2">
-                <div className="h-8 w-8 overflow-hidden rounded-full bg-[#6d4aff]/40 text-xs font-semibold text-white">
+            <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+              <div className="flex items-center gap-2.5">
+                <div className="h-9 w-9 overflow-hidden rounded-full bg-[var(--accent)]/45 text-xs font-semibold text-white ring-2 ring-white/10">
                   {avatarUrl ? (
                     <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
                   ) : (
@@ -1829,7 +1832,7 @@ export function InboxClient({
                     </div>
                   )}
                 </div>
-                <p className="min-w-0 truncate text-xs text-[#c5c3d8]">{email}</p>
+                <p className="min-w-0 truncate text-xs text-[var(--sidebar-text)] leading-snug">{email}</p>
               </div>
             </div>
           )}
@@ -1841,7 +1844,7 @@ export function InboxClient({
 
         {/* ── MESSAGE LIST ── */}
         <div
-          className="w-full md:w-[320px] lg:w-[360px] shrink-0 flex flex-col bg-white border-r border-[#e8e4f8]"
+          className="w-full md:w-[320px] lg:w-[360px] shrink-0 flex flex-col bg-[var(--card)] border-r border-[var(--border)] shadow-[2px_0_24px_-12px_rgba(28,27,51,0.07)]"
           style={{
             display:
               (detail || (isScheduledNav && selectedScheduledJob)) &&
@@ -1852,18 +1855,20 @@ export function InboxClient({
           }}
         >
           {/* Top bar */}
-          <div className="flex flex-col gap-1.5 px-3 py-3 border-b border-[#f0edfb]">
+          <div className="flex flex-col gap-1.5 px-3 py-3 border-b border-[var(--border)] bg-[var(--card)]">
             <div className="flex items-center gap-2">
               <button
-                className="p-1.5 rounded-lg hover:bg-[#f3f0fd] text-[#65637e]"
+                type="button"
+                aria-label="Open navigation menu"
+                className="p-1.5 rounded-lg hover:bg-[var(--accent-soft)] text-[var(--muted)] transition-colors"
                 onClick={toggleSidebar}
               >
                 <IconMenu />
               </button>
-              <div className="flex flex-1 items-center gap-2 bg-[#f3f0fd] rounded-xl px-3 py-2 min-w-0">
+              <div className="flex flex-1 items-center gap-2 bg-[var(--background)] rounded-xl px-3 py-2 min-w-0 border border-transparent transition-[box-shadow,border-color,background-color] duration-150 focus-within:border-[var(--accent)]/30 focus-within:shadow-[0_0_0_3px_rgba(109,74,255,0.12)] focus-within:bg-[var(--card)]">
                 <IconSearch />
                 <input
-                  className="flex-1 min-w-0 bg-transparent text-sm outline-none text-[#1c1b33] placeholder:text-[#9896b4]"
+                  className="flex-1 min-w-0 bg-transparent text-sm outline-none text-[var(--foreground)] placeholder:text-[var(--muted)]"
                   placeholder={
                     isScheduledNav
                       ? "Search scheduled"
@@ -1878,7 +1883,7 @@ export function InboxClient({
                   <button
                     type="button"
                     onClick={() => setSearchQ("")}
-                    className="text-[#9896b4] hover:text-[#6d4aff] transition-colors shrink-0"
+                    className="text-[var(--muted)] hover:text-[var(--accent)] transition-colors shrink-0"
                   >
                     <IconClose />
                   </button>
@@ -1917,8 +1922,8 @@ export function InboxClient({
           )}
 
           {/* Folder header */}
-          <div className="px-4 py-2.5 border-b border-[#f0edfb] space-y-2.5">
-            <h2 className="text-[13px] font-semibold text-[#1c1b33]">
+          <div className="px-4 py-3 border-b border-[var(--border)] space-y-2.5 bg-[var(--card)]">
+            <h2 className="text-sm font-semibold text-[var(--foreground)] tracking-tight">
               {folderDisplayName(nav, labels)}
             </h2>
             <div className="flex items-center gap-2 flex-wrap">
@@ -1938,7 +1943,7 @@ export function InboxClient({
                 aria-label="Filter messages"
                 value={listFilter}
                 onChange={(e) => setListFilter(e.target.value as ListFilter)}
-                className="min-w-0 flex-1 rounded-lg border border-[#e8e4f8] bg-white px-2 py-1.5 text-xs text-[#44435a] outline-none focus:border-[#6d4aff] sm:flex-none sm:min-w-[8.5rem]"
+                className="min-w-0 flex-1 rounded-lg border border-[var(--border)] bg-[var(--card)] px-2 py-1.5 text-xs text-[var(--foreground)] outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/15 sm:flex-none sm:min-w-[8.5rem]"
                 disabled={loading}
               >
                 <option value="all">All</option>
@@ -1952,7 +1957,7 @@ export function InboxClient({
                 type="button"
                 onClick={() => void handleRefreshList()}
                 disabled={loading || listRefreshing}
-                className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-[#e8e4f8] bg-white px-2.5 py-1.5 text-xs font-medium text-[#65637e] hover:border-[#6d4aff] hover:text-[#6d4aff] transition-colors disabled:opacity-60 active:scale-[0.98] active:bg-[#f3f0fd]"
+                className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--card)] px-2.5 py-1.5 text-xs font-medium text-[var(--muted)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors disabled:opacity-60 active:scale-[0.98] active:bg-[var(--accent-soft)]"
                 title={isScheduledNav ? "Refresh scheduled" : "Refresh messages"}
                 aria-busy={listRefreshing}
               >
@@ -1988,13 +1993,13 @@ export function InboxClient({
               </div>
             ) : isScheduledNav ? (
               filteredScheduledJobs.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-48 gap-3">
-                  <div className="w-14 h-14 rounded-full bg-[#f3f0fd] flex items-center justify-center text-[#6d4aff]">
+                <div className="flex flex-col items-center justify-center h-48 gap-3 px-6">
+                  <div className="w-14 h-14 rounded-2xl bg-[var(--accent-soft)] flex items-center justify-center text-[var(--accent)] shadow-[inset_0_1px_0_rgba(255,255,255,0.65)]">
                     <IconClock />
                   </div>
-                  <div className="text-center">
-                    <p className="text-sm font-medium text-[#65637e]">No scheduled messages</p>
-                    <p className="text-xs text-[#9896b4] mt-0.5">
+                  <div className="text-center max-w-[240px]">
+                    <p className="text-sm font-medium text-[var(--muted)]">No scheduled messages</p>
+                    <p className="text-xs text-[var(--muted)] mt-1 leading-relaxed opacity-90">
                       {searchQ ? "Try a different search" : "Schedule a send from compose"}
                     </p>
                   </div>
@@ -2016,8 +2021,8 @@ export function InboxClient({
                           setSelectedScheduledId(job.id);
                         }
                       }}
-                      className={`w-full text-left border-b border-[#f7f5fd] transition-colors ${rowPad} px-4 cursor-pointer ${
-                        rowSelected ? "bg-[#ede8ff] border-l-2 border-l-[#6d4aff]" : "hover:bg-[#f8f6fd] border-l-2 border-l-transparent"
+                      className={`w-full text-left border-b border-[var(--border)] transition-[background-color,border-color] duration-150 ${rowPad} px-4 cursor-pointer ${
+                        rowSelected ? "bg-[var(--accent-soft)] border-l-[3px] border-l-[var(--accent)]" : "hover:bg-[var(--background)] border-l-[3px] border-l-transparent"
                       }`}
                     >
                       <div className="flex items-start justify-between gap-2">
@@ -2045,13 +2050,13 @@ export function InboxClient({
                 })
               )
             ) : threadIdsSorted.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-48 gap-3">
-                <div className="w-14 h-14 rounded-full bg-[#f3f0fd] flex items-center justify-center">
-                  <span className="text-3xl opacity-30">📭</span>
+              <div className="flex flex-col items-center justify-center h-48 gap-3 px-6">
+                <div className="w-14 h-14 rounded-2xl bg-[var(--accent-soft)] flex items-center justify-center text-[var(--accent)] shadow-[inset_0_1px_0_rgba(255,255,255,0.65)]">
+                  <IconInbox />
                 </div>
-                <div className="text-center">
-                  <p className="text-sm font-medium text-[#65637e]">No messages found</p>
-                  <p className="text-xs text-[#9896b4] mt-0.5">
+                <div className="text-center max-w-[240px]">
+                  <p className="text-sm font-medium text-[var(--muted)]">No messages found</p>
+                  <p className="text-xs text-[var(--muted)] mt-1 leading-relaxed opacity-90">
                     {searchQ
                       ? "Try a different search"
                       : listFilter !== "all"
@@ -2083,8 +2088,8 @@ export function InboxClient({
                         openMessage(rep.id);
                       }
                     }}
-                    className={`w-full text-left border-b border-[#f7f5fd] transition-colors ${rowPad} px-4 ${
-                      isSelected ? "bg-[#ede8ff] border-l-2 border-l-[#6d4aff]" : "hover:bg-[#f8f6fd] border-l-2 border-l-transparent"
+                    className={`w-full text-left border-b border-[var(--border)] transition-[background-color,border-color] duration-150 ${rowPad} px-4 ${
+                      isSelected ? "bg-[var(--accent-soft)] border-l-[3px] border-l-[var(--accent)]" : "hover:bg-[var(--background)] border-l-[3px] border-l-transparent"
                     } cursor-pointer`}
                   >
                     <div className="flex items-start gap-2.5">
@@ -2108,11 +2113,11 @@ export function InboxClient({
                       {/* Avatar / unread dot */}
                       <div className="shrink-0 mt-0.5">
                         {!isRead ? (
-                          <div className="w-7 h-7 rounded-full bg-[#6d4aff] flex items-center justify-center text-white text-[10px] font-bold">
+                          <div className="w-7 h-7 rounded-full bg-[var(--accent)] flex items-center justify-center text-white text-[10px] font-bold shadow-sm ring-2 ring-[var(--accent)]/25">
                             {senderInitial(isSentNav ? rep.toAddr : rep.fromAddr)}
                           </div>
                         ) : (
-                          <div className="w-7 h-7 rounded-full bg-[#f3f0fd] flex items-center justify-center text-[#9896b4] text-[10px] font-bold">
+                          <div className="w-7 h-7 rounded-full bg-[var(--accent-soft)] flex items-center justify-center text-[var(--muted)] text-[10px] font-bold">
                             {senderInitial(isSentNav ? rep.toAddr : rep.fromAddr)}
                           </div>
                         )}

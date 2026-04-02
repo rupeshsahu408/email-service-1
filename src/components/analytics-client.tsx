@@ -828,8 +828,7 @@ export function AnalyticsClient({ email }: { email: string }) {
                       <p className="mt-0.5 text-sm text-[#65637e]">
                         Hybrid: strong signals use rules; optional{" "}
                         <span className="font-semibold text-[#5b3dff]">AI</span>{" "}
-                        can refine ambiguous &quot;personal&quot; buckets (server
-                        needs <code className="text-xs">GEMINI_API_KEY</code>).
+                        can refine ambiguous &quot;personal&quot; buckets.
                       </p>
                     </div>
                     <label className="inline-flex items-center gap-2 rounded-xl border border-[#e8e4f8] bg-[#faf9fe] px-3 py-2 text-sm text-[#44435a] cursor-pointer select-none shrink-0">
