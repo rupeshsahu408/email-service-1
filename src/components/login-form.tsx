@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { startAuthentication } from "@simplewebauthn/browser";
 import type { PublicKeyCredentialRequestOptionsJSON } from "@simplewebauthn/browser";
+import { safeRelativeRedirectPath } from "@/lib/safe-redirect";
 
 async function readJsonResponse<T>(res: Response): Promise<T | null> {
   const text = await res.text();
@@ -25,9 +26,23 @@ function passkeyFriendlyError(err: unknown, fallback: string): string {
   return fallback;
 }
 
-export function LoginForm() {
+function postLoginTarget(
+  apiRedirect: string | undefined,
+  nextSafe: string | null
+): string {
+  if (apiRedirect === "/admin/dashboard") return apiRedirect;
+  return nextSafe ?? apiRedirect ?? "/inbox";
+}
+
+export function LoginForm({ nextParam }: { nextParam?: string }) {
   const router = useRouter();
-  useEffect(() => { router.prefetch("/inbox"); }, [router]);
+  const nextSafe = useMemo(
+    () => safeRelativeRedirectPath(nextParam),
+    [nextParam]
+  );
+  useEffect(() => {
+    router.prefetch("/inbox");
+  }, [router]);
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -52,7 +67,7 @@ export function LoginForm() {
         return;
       }
       if (!res.ok) { setError(data.error ?? "Login failed."); return; }
-      window.location.assign(data.redirectTo ?? "/inbox");
+      window.location.assign(postLoginTarget(data.redirectTo, nextSafe));
     } catch {
       setError("Network error. Check your connection and try again.");
     } finally {
@@ -96,7 +111,9 @@ export function LoginForm() {
         setError(verifyJson?.error ?? "Passkey login failed.");
         return;
       }
-      window.location.assign(verifyJson?.redirectTo ?? "/inbox");
+      window.location.assign(
+        postLoginTarget(verifyJson?.redirectTo, nextSafe)
+      );
     } catch (err) {
       setError(
         passkeyFriendlyError(
@@ -113,7 +130,7 @@ export function LoginForm() {
     <div className="min-h-screen bg-[#f3f0fd] flex flex-col">
       {/* Header */}
       <header className="px-6 py-4">
-        <Link href="/" className="flex items-center gap-2 w-fit">
+        <Link href="/signup" className="flex items-center gap-2 w-fit">
           <img src="/sendora-logo.png" alt="Sendora" className="w-8 h-8 object-contain" />
           <span className="text-[15px] font-bold text-[#1c1b33]">Sendora</span>
         </Link>

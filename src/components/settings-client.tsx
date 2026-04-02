@@ -287,8 +287,29 @@ export function SettingsClient({
 
   if (!data) {
     return (
-      <div className="flex min-h-[100dvh] items-center justify-center bg-[var(--background)] text-[var(--muted)]">
-        Loading settings…
+      <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-3 bg-[var(--background)] text-[var(--muted)]">
+        <svg
+          className="h-6 w-6 animate-spin text-[var(--accent)]"
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden
+        >
+          <circle
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="3"
+            strokeOpacity="0.2"
+          />
+          <path
+            d="M12 2a10 10 0 0 1 10 10"
+            stroke="currentColor"
+            strokeWidth="3"
+            strokeLinecap="round"
+          />
+        </svg>
+        <p className="text-sm font-medium">Loading settings…</p>
       </div>
     );
   }
@@ -308,14 +329,17 @@ export function SettingsClient({
   return (
     <div className="min-h-[100dvh] bg-[var(--background)] text-[var(--foreground)]">
       {toast && (
-        <div className="fixed bottom-6 left-1/2 z-[100] -translate-x-1/2 rounded-full bg-[var(--foreground)] px-5 py-2 text-sm text-[var(--background)] shadow-lg transition">
+        <div
+          className="fixed bottom-6 left-1/2 z-[100] -translate-x-1/2 rounded-full border border-[var(--border)] bg-[var(--foreground)] px-5 py-2.5 text-sm font-medium text-[var(--background)] shadow-lg shadow-black/10 ring-1 ring-black/5 dark:ring-white/10"
+          role="status"
+        >
           {toast}
         </div>
       )}
-      <header className="border-b border-[var(--border)] bg-[var(--card)] px-4 py-3">
+      <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--card)]/90 px-4 py-3.5 shadow-[0_1px_0_rgba(28,27,51,0.06)] backdrop-blur-md dark:shadow-[0_1px_0_rgba(255,255,255,0.06)]">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 overflow-hidden rounded-full border border-[var(--border)] bg-slate-100 text-xs font-semibold text-[var(--muted)]">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-[var(--border)] bg-[var(--background)] text-xs font-semibold text-[var(--muted)] ring-2 ring-[var(--accent)]/15">
               {data.user.avatarUrl ? (
                 <img src={data.user.avatarUrl} alt="" className="h-full w-full object-cover" />
               ) : (
@@ -324,22 +348,30 @@ export function SettingsClient({
                 </div>
               )}
             </div>
-            <div>
-              <h1 className="text-lg font-semibold">Settings</h1>
-              <p className="text-xs text-[var(--muted)]">{email}</p>
+            <div className="min-w-0">
+              <h1 className="text-lg font-semibold tracking-tight text-[var(--foreground)]">
+                Settings
+              </h1>
+              <p className="truncate text-xs text-[var(--muted)]">{email}</p>
             </div>
           </div>
           <Link
             href="/inbox"
-            className="text-sm font-medium text-[var(--accent)] hover:underline"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-sm font-medium text-[var(--foreground)] transition-colors hover:border-[var(--accent)]/45 hover:text-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/30"
           >
+            <span aria-hidden className="text-[var(--muted)]">
+              ←
+            </span>
             Back to inbox
           </Link>
         </div>
       </header>
 
-      <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-6 md:flex-row md:items-start">
-        <nav className="flex w-full shrink-0 flex-wrap gap-1 md:w-52 md:flex-col md:gap-0">
+      <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-8 md:flex-row md:items-start">
+        <nav
+          className="flex w-full shrink-0 flex-wrap gap-1 md:sticky md:top-[4.5rem] md:w-52 md:flex-col md:gap-0.5 md:self-start"
+          aria-label="Settings sections"
+        >
           {navRows.map((item) => (
             <button
               key={item.id}
@@ -348,10 +380,10 @@ export function SettingsClient({
                 setSection(item.id);
                 setErr("");
               }}
-              className={`rounded-lg px-3 py-2 text-left text-sm font-medium md:w-full ${
+              className={`rounded-lg px-3 py-2 text-left text-sm font-medium transition-[color,background-color,box-shadow] duration-150 md:w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/30 ${
                 section === item.id
-                  ? "bg-[var(--accent-soft)] text-[var(--accent)]"
-                  : "text-[var(--foreground)] hover:bg-slate-100 dark:hover:bg-white/5"
+                  ? "bg-[var(--accent-soft)] text-[var(--accent)] shadow-[inset_2px_0_0_0_var(--accent)]"
+                  : "text-[var(--foreground)] hover:bg-[var(--background)] dark:hover:bg-white/5"
               }`}
             >
               {item.label}
@@ -473,10 +505,14 @@ function Panel({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
-      <h2 className="text-base font-semibold">{title}</h2>
+    <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm shadow-[2px_4px_28px_-14px_rgba(28,27,51,0.12)] ring-1 ring-black/[0.03] dark:ring-white/[0.05]">
+      <h2 className="text-base font-semibold tracking-tight text-[var(--foreground)]">
+        {title}
+      </h2>
       {description && (
-        <p className="mt-1 text-sm text-[var(--muted)]">{description}</p>
+        <p className="mt-1.5 text-sm leading-relaxed text-[var(--muted)]">
+          {description}
+        </p>
       )}
       <div className="mt-5 space-y-4">{children}</div>
     </section>
@@ -665,7 +701,7 @@ function AccountPanel({
         description="Upload a profile picture used for your account identity in Sendora."
       >
         <div className="flex items-center gap-4">
-          <div className="h-14 w-14 overflow-hidden rounded-full border border-[var(--border)] bg-slate-100 text-lg font-semibold text-[var(--muted)]">
+          <div className="h-14 w-14 overflow-hidden rounded-full border border-[var(--border)] bg-[var(--background)] text-lg font-semibold text-[var(--muted)]">
             {avatarUrl ? (
               <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
             ) : (
@@ -675,7 +711,7 @@ function AccountPanel({
             )}
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <label className="cursor-pointer rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white">
+            <label className="cursor-pointer rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white shadow-sm shadow-[var(--accent)]/30 transition-[transform,opacity,box-shadow] hover:opacity-95 hover:shadow-md active:scale-[0.98]">
               Upload / Change
               <input
                 type="file"
@@ -692,7 +728,7 @@ function AccountPanel({
               <button
                 type="button"
                 onClick={removeAvatar}
-                className="rounded-full border border-[var(--border)] px-4 py-2 text-sm font-medium hover:bg-slate-50 dark:hover:bg-white/5"
+                className="rounded-full border border-[var(--border)] px-4 py-2 text-sm font-medium hover:bg-[var(--background)] dark:hover:bg-white/5"
               >
                 Remove
               </button>
@@ -707,7 +743,7 @@ function AccountPanel({
       >
         <form onSubmit={addAccount} className="max-w-md space-y-3">
           <input
-            className="w-full rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-sm"
+            className="w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--muted)] focus:border-[var(--accent)]/40 focus:ring-2 focus:ring-[var(--accent)]/12"
             placeholder="Username"
             value={addUsername}
             onChange={(e) => setAddUsername(e.target.value)}
@@ -715,7 +751,7 @@ function AccountPanel({
           />
           <input
             type="password"
-            className="w-full rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-sm"
+            className="w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--muted)] focus:border-[var(--accent)]/40 focus:ring-2 focus:ring-[var(--accent)]/12"
             placeholder="Password"
             value={addPassword}
             onChange={(e) => setAddPassword(e.target.value)}
@@ -738,7 +774,7 @@ function AccountPanel({
               {accounts.map((acc) => (
                 <li key={acc.userId} className="flex items-center justify-between gap-3 px-3 py-2">
                   <div className="flex min-w-0 items-center gap-2">
-                    <div className="h-7 w-7 overflow-hidden rounded-full border border-[var(--border)] bg-slate-100 text-[10px] font-semibold text-[var(--muted)]">
+                    <div className="h-7 w-7 overflow-hidden rounded-full border border-[var(--border)] bg-[var(--background)] text-[10px] font-semibold text-[var(--muted)]">
                       {acc.avatarUrl ? (
                         <img src={acc.avatarUrl} alt="" className="h-full w-full object-cover" />
                       ) : (
@@ -757,7 +793,7 @@ function AccountPanel({
                       <button
                         type="button"
                         onClick={() => void switchAccount(acc.userId)}
-                        className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-xs font-medium hover:bg-slate-50 dark:hover:bg-white/5"
+                        className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-xs font-medium hover:bg-[var(--background)] dark:hover:bg-white/5"
                       >
                         Switch
                       </button>
@@ -786,7 +822,7 @@ function AccountPanel({
         <form onSubmit={changePassword} className="max-w-md space-y-3">
           <input
             type="password"
-            className="w-full rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-sm"
+            className="w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--muted)] focus:border-[var(--accent)]/40 focus:ring-2 focus:ring-[var(--accent)]/12"
             placeholder="Current password"
             value={cur}
             onChange={(e) => setCur(e.target.value)}
@@ -794,7 +830,7 @@ function AccountPanel({
           />
           <input
             type="password"
-            className="w-full rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-sm"
+            className="w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--muted)] focus:border-[var(--accent)]/40 focus:ring-2 focus:ring-[var(--accent)]/12"
             placeholder="New password (12+ characters)"
             value={next}
             onChange={(e) => setNext(e.target.value)}
@@ -803,7 +839,7 @@ function AccountPanel({
           />
           <input
             type="password"
-            className="w-full rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-sm"
+            className="w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--muted)] focus:border-[var(--accent)]/40 focus:ring-2 focus:ring-[var(--accent)]/12"
             placeholder="Confirm new password"
             value={next2}
             onChange={(e) => setNext2(e.target.value)}
@@ -823,7 +859,7 @@ function AccountPanel({
         <button
           type="button"
           onClick={logoutEverywhere}
-          className="rounded-xl border border-[var(--border)] px-4 py-2 text-sm font-medium hover:bg-slate-50 dark:hover:bg-white/5"
+          className="rounded-xl border border-[var(--border)] px-4 py-2 text-sm font-medium hover:bg-[var(--background)] dark:hover:bg-white/5"
         >
           Log out all devices
         </button>
@@ -835,7 +871,7 @@ function AccountPanel({
       >
         <form onSubmit={deleteAccount} className="max-w-md space-y-3">
           <input
-            className="w-full rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-sm"
+            className="w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--muted)] focus:border-[var(--accent)]/40 focus:ring-2 focus:ring-[var(--accent)]/12"
             placeholder="Confirm email address"
             value={delEmail}
             onChange={(e) => setDelEmail(e.target.value)}
@@ -843,7 +879,7 @@ function AccountPanel({
           />
           <input
             type="password"
-            className="w-full rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-sm"
+            className="w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--muted)] focus:border-[var(--accent)]/40 focus:ring-2 focus:ring-[var(--accent)]/12"
             placeholder="Password"
             value={delPass}
             onChange={(e) => setDelPass(e.target.value)}
@@ -1116,13 +1152,13 @@ function SecurityPanel({
             type="button"
             onClick={contactSupport}
             disabled={supportBusy}
-            className="rounded-full border border-[var(--border)] px-4 py-2 text-sm font-medium hover:bg-slate-50 dark:hover:bg-white/5 disabled:opacity-50"
+            className="rounded-full border border-[var(--border)] px-4 py-2 text-sm font-medium hover:bg-[var(--background)] dark:hover:bg-white/5 disabled:opacity-50"
           >
             {supportBusy ? "Sending…" : "Contact support"}
           </button>
           <Link
             href="/forgot-password"
-            className="rounded-full border border-[var(--border)] px-4 py-2 text-sm font-medium hover:bg-slate-50 dark:hover:bg-white/5"
+            className="rounded-full border border-[var(--border)] px-4 py-2 text-sm font-medium hover:bg-[var(--background)] dark:hover:bg-white/5"
           >
             Test recovery flow
           </Link>
@@ -1207,7 +1243,7 @@ function SecurityPanel({
         <form onSubmit={regen} className="max-w-md space-y-3">
           <input
             type="password"
-            className="w-full rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-sm"
+            className="w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--muted)] focus:border-[var(--accent)]/40 focus:ring-2 focus:ring-[var(--accent)]/12"
             placeholder="Confirm password"
             value={recoveryPass}
             onChange={(e) => setRecoveryPass(e.target.value)}
@@ -1216,7 +1252,7 @@ function SecurityPanel({
           <button
             type="submit"
             disabled={busy}
-            className="rounded-full border border-[var(--border)] px-4 py-2 text-sm font-medium hover:bg-slate-50 dark:hover:bg-white/5 disabled:opacity-50"
+            className="rounded-full border border-[var(--border)] px-4 py-2 text-sm font-medium hover:bg-[var(--background)] dark:hover:bg-white/5 disabled:opacity-50"
           >
             Generate new recovery key
           </button>
@@ -1270,7 +1306,7 @@ function SecurityPanel({
               type="button"
               onClick={removeAllPasskeys}
               disabled={busy || passkeyBusy || !passkeyCount}
-              className="rounded-full border border-[var(--border)] px-4 py-2 text-sm font-medium hover:bg-slate-50 dark:hover:bg-white/5 disabled:opacity-50"
+              className="rounded-full border border-[var(--border)] px-4 py-2 text-sm font-medium hover:bg-[var(--background)] dark:hover:bg-white/5 disabled:opacity-50"
             >
               Remove passkeys
             </button>
@@ -1305,7 +1341,7 @@ function AppearancePanel({
             className={`rounded-full px-4 py-2 text-sm font-medium capitalize ${
               settings.theme === t
                 ? "bg-[var(--accent-soft)] text-[var(--accent)]"
-                : "border border-[var(--border)] hover:bg-slate-50 dark:hover:bg-white/5"
+                : "border border-[var(--border)] hover:bg-[var(--background)] dark:hover:bg-white/5"
             }`}
           >
             {t}
@@ -1406,7 +1442,7 @@ function ComposePanel({
     >
       <label className="text-xs font-medium text-[var(--muted)]">Signature</label>
       <textarea
-        className="mt-1 min-h-[100px] w-full rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-sm"
+        className="mt-1 min-h-[100px] w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--muted)] focus:border-[var(--accent)]/40 focus:ring-2 focus:ring-[var(--accent)]/12"
         value={sig}
         onChange={(e) => setSig(e.target.value)}
         onBlur={() => {
@@ -1418,7 +1454,7 @@ function ComposePanel({
       <div>
         <p className="text-xs font-medium text-[var(--muted)]">Default font</p>
         <select
-          className="mt-1 rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-sm"
+          className="mt-1 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--muted)] focus:border-[var(--accent)]/40 focus:ring-2 focus:ring-[var(--accent)]/12"
           value={settings.composeFont}
           onChange={(e) =>
             patchSettings({ composeFont: e.target.value }, "Saved")
@@ -1517,7 +1553,7 @@ function LabelsPanel({
     <Panel title="Labels" description="Create, color, rename, and remove labels.">
       <form onSubmit={create} className="flex flex-wrap gap-2">
         <input
-          className="min-w-[200px] flex-1 rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-sm"
+          className="min-w-[200px] flex-1 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--muted)] focus:border-[var(--accent)]/40 focus:ring-2 focus:ring-[var(--accent)]/12"
           placeholder="New label name"
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -2011,7 +2047,7 @@ function FiltersPanel({
       >
         <form onSubmit={addBlock} className="flex flex-wrap gap-2">
           <input
-            className="min-w-[200px] flex-1 rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-sm"
+            className="min-w-[200px] flex-1 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--muted)] focus:border-[var(--accent)]/40 focus:ring-2 focus:ring-[var(--accent)]/12"
             placeholder="email@example.com or @domain.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -2048,7 +2084,7 @@ function FiltersPanel({
       >
         <form onSubmit={addRule} className="space-y-3">
           <input
-            className="w-full rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-sm"
+            className="w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--muted)] focus:border-[var(--accent)]/40 focus:ring-2 focus:ring-[var(--accent)]/12"
             placeholder="From matches (e.g. person@site.com or @spam.com)"
             value={from}
             onChange={(e) => setFrom(e.target.value)}
@@ -2074,7 +2110,7 @@ function FiltersPanel({
           </div>
           {action === "label" && (
             <select
-              className="w-full rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-sm"
+              className="w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--muted)] focus:border-[var(--accent)]/40 focus:ring-2 focus:ring-[var(--accent)]/12"
               value={labelId}
               onChange={(e) => setLabelId(e.target.value)}
               required
@@ -2161,7 +2197,7 @@ function PrivacyPanel({
       <div>
         <p className="text-xs font-medium text-[var(--muted)]">External images</p>
         <select
-          className="mt-1 rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-sm"
+          className="mt-1 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--muted)] focus:border-[var(--accent)]/40 focus:ring-2 focus:ring-[var(--accent)]/12"
           value={settings.externalImages}
           onChange={(e) =>
             patchSettings({ externalImages: e.target.value }, "Saved")
@@ -2284,13 +2320,13 @@ function SubscriptionPanel({
           <div className="mt-4 flex flex-wrap gap-3">
             <Link
               href="/upgrade#pricing"
-              className="inline-block rounded-full bg-[#6d4aff] px-5 py-2 text-sm font-bold text-white shadow hover:bg-[#5b3dff] transition-colors"
+              className="inline-block rounded-full bg-[var(--accent)] px-5 py-2 text-sm font-bold text-white shadow-md shadow-[var(--accent)]/25 transition-[transform,box-shadow,opacity] hover:opacity-95 hover:shadow-lg active:scale-[0.98]"
             >
               Activate your Business Email
             </Link>
             <Link
               href="/temp-inbox/upgrade"
-              className="inline-block rounded-full border border-[var(--border)] px-5 py-2 text-sm font-semibold text-[var(--foreground)] hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
+              className="inline-block rounded-full border border-[var(--border)] px-5 py-2 text-sm font-semibold text-[var(--foreground)] transition-colors hover:border-[var(--accent)]/35 hover:bg-[var(--accent-soft)] dark:hover:bg-white/5"
             >
               Activate Temporary Inbox
             </Link>

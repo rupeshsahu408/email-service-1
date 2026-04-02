@@ -72,7 +72,7 @@ function toneClasses(tone: StatCard["tone"]) {
   if (tone === "good") return "text-emerald-700 bg-emerald-50 border-emerald-100";
   if (tone === "warn") return "text-amber-700 bg-amber-50 border-amber-100";
   if (tone === "danger") return "text-red-700 bg-red-50 border-red-100";
-  return "text-[#6d4aff] bg-[#f3efff] border-[#e7ddff]";
+  return "text-[var(--accent)] bg-[var(--accent-soft)] border-[var(--border)]";
 }
 
 function badgeClasses(status: "success" | "warning" | "error" | "info") {
@@ -344,18 +344,18 @@ export function AdminDashboard() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-2xl border border-[#eae7f8] bg-white p-5 shadow-sm md:p-6">
+      <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm shadow-[2px_4px_28px_-14px_rgba(28,27,51,0.1)] ring-1 ring-black/[0.03] dark:ring-white/[0.05] md:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-2xl font-semibold tracking-tight text-[#1c1b33]">Admin Dashboard</h2>
-            <p className="mt-1 text-sm text-[#4f4a6b]">
+            <h2 className="text-2xl font-semibold tracking-tight text-[var(--foreground)]">Admin Dashboard</h2>
+            <p className="mt-1 text-sm text-[var(--muted)]">
               Live data from your database. Daily email totals and charts use UTC dates so they stay aligned with server-stored messages.
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <div className="rounded-xl border border-[#ece9fb] bg-[#faf9ff] px-3 py-2 text-right">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-[#696384]">Current Time</p>
-              <p className="text-sm font-semibold text-[#2a2740]">
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--accent-soft)] px-3 py-2 text-right">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--muted)]">Current Time</p>
+              <p className="text-sm font-semibold text-[var(--foreground)]">
                 {now.toLocaleDateString()} {now.toLocaleTimeString()}
               </p>
             </div>
@@ -363,7 +363,7 @@ export function AdminDashboard() {
               type="button"
               onClick={onRefresh}
               disabled={refreshing}
-              className="rounded-xl border border-[#e0daf9] bg-white px-3 py-2 text-sm font-medium text-[#4b3fa8] transition hover:bg-[#f6f2ff] disabled:opacity-60"
+              className="rounded-xl border border-[var(--border)] bg-[var(--card)] px-3 py-2 text-sm font-medium text-[var(--accent)] shadow-sm transition-[colors,transform] hover:border-[var(--accent)]/35 hover:bg-[var(--accent-soft)] active:scale-[0.98] disabled:opacity-60"
             >
               {refreshing ? "Refreshing..." : "Refresh"}
             </button>
@@ -372,8 +372,29 @@ export function AdminDashboard() {
       </section>
 
       {loading ? (
-        <section className="rounded-2xl border border-[#ece9fb] bg-white p-6 text-sm text-[#6f6b8c] shadow-sm">
-          Loading dashboard data...
+        <section className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-10 text-sm text-[var(--muted)] shadow-sm">
+          <svg
+            className="h-6 w-6 animate-spin text-[var(--accent)]"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden
+          >
+            <circle
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="3"
+              strokeOpacity="0.2"
+            />
+            <path
+              d="M12 2a10 10 0 0 1 10 10"
+              stroke="currentColor"
+              strokeWidth="3"
+              strokeLinecap="round"
+            />
+          </svg>
+          <p className="font-medium">Loading dashboard data…</p>
         </section>
       ) : null}
 
@@ -384,7 +405,7 @@ export function AdminDashboard() {
       ) : null}
 
       {!loading && !error && !data ? (
-        <section className="rounded-2xl border border-[#ece9fb] bg-white p-6 text-sm text-[#6f6b8c] shadow-sm">
+        <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6 text-sm text-[var(--muted)] shadow-sm">
           No dashboard data available yet.
         </section>
       ) : null}
@@ -395,10 +416,10 @@ export function AdminDashboard() {
         {stats.map((s) => (
           <article
             key={s.label}
-            className="rounded-2xl border border-[#ece9fb] bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+            className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
           >
-            <p className="text-xs font-semibold uppercase tracking-wider text-[#605a80]">{s.label}</p>
-            <p className="mt-2 text-2xl font-bold text-[#1c1b33]">{s.value}</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">{s.label}</p>
+            <p className="mt-2 text-2xl font-bold text-[var(--foreground)]">{s.value}</p>
             {s.delta ? (
               <span className={`mt-3 inline-flex rounded-full border px-2.5 py-1 text-xs font-medium ${toneClasses(s.tone)}`}>
                 {s.delta}
@@ -409,31 +430,31 @@ export function AdminDashboard() {
       </section>
 
       <section className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-        <article className="rounded-2xl border border-[#e6e0fb] bg-white p-5 shadow-sm xl:col-span-2 md:p-6">
-          <h3 className="text-base font-semibold text-[#1c1b33]">Storage Monitoring</h3>
-          <p className="mt-1 text-sm text-[#4f4a6b]">
+        <article className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm xl:col-span-2 md:p-6">
+          <h3 className="text-base font-semibold text-[var(--foreground)]">Storage Monitoring</h3>
+          <p className="mt-1 text-sm text-[var(--muted)]">
             Aggregated live usage across all users and storage contributors.
           </p>
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div className="rounded-xl border border-[#eee8ff] bg-[#faf8ff] p-3">
-              <p className="text-xs font-semibold uppercase tracking-wider text-[#605a80]">Total capacity</p>
-              <p className="mt-1 text-lg font-bold text-[#1c1b33]">{formatBytes(data.storage.totalCapacityBytes)}</p>
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--accent-soft)] p-3">
+              <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">Total capacity</p>
+              <p className="mt-1 text-lg font-bold text-[var(--foreground)]">{formatBytes(data.storage.totalCapacityBytes)}</p>
             </div>
-            <div className="rounded-xl border border-[#eee8ff] bg-[#faf8ff] p-3">
-              <p className="text-xs font-semibold uppercase tracking-wider text-[#605a80]">Total used</p>
-              <p className="mt-1 text-lg font-bold text-[#1c1b33]">{formatBytes(data.storage.totalUsedBytes)}</p>
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--accent-soft)] p-3">
+              <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">Total used</p>
+              <p className="mt-1 text-lg font-bold text-[var(--foreground)]">{formatBytes(data.storage.totalUsedBytes)}</p>
             </div>
-            <div className="rounded-xl border border-[#eee8ff] bg-[#faf8ff] p-3">
-              <p className="text-xs font-semibold uppercase tracking-wider text-[#605a80]">Total free</p>
-              <p className="mt-1 text-lg font-bold text-[#1c1b33]">{formatBytes(data.storage.totalFreeBytes)}</p>
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--accent-soft)] p-3">
+              <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">Total free</p>
+              <p className="mt-1 text-lg font-bold text-[var(--foreground)]">{formatBytes(data.storage.totalFreeBytes)}</p>
             </div>
-            <div className="rounded-xl border border-[#eee8ff] bg-[#faf8ff] p-3">
-              <p className="text-xs font-semibold uppercase tracking-wider text-[#605a80]">Usage</p>
-              <p className="mt-1 text-lg font-bold text-[#1c1b33]">{data.storage.usagePercent.toFixed(1)}%</p>
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--accent-soft)] p-3">
+              <p className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">Usage</p>
+              <p className="mt-1 text-lg font-bold text-[var(--foreground)]">{data.storage.usagePercent.toFixed(1)}%</p>
             </div>
           </div>
           <div className="mt-4">
-            <div className="h-3 overflow-hidden rounded-full bg-[#ece6ff]">
+            <div className="h-3 overflow-hidden rounded-full bg-[var(--accent-soft)]">
               <div
                 className={`h-3 rounded-full ${
                   data.storage.warningState === "full"
@@ -442,12 +463,12 @@ export function AdminDashboard() {
                       ? "bg-amber-500"
                       : data.storage.warningState === "warning80"
                         ? "bg-yellow-500"
-                        : "bg-[#6d4aff]"
+                        : "bg-[var(--accent)]"
                 }`}
                 style={{ width: `${Math.min(100, data.storage.usagePercent)}%` }}
               />
             </div>
-            <p className="mt-2 text-xs font-medium text-[#4f4a6b]">
+            <p className="mt-2 text-xs font-medium text-[var(--muted)]">
               {data.storage.warningState === "full"
                 ? "Storage is at or above capacity."
                 : data.storage.warningState === "warning95"
@@ -457,7 +478,7 @@ export function AdminDashboard() {
                     : "Storage usage is within normal range."}
             </p>
           </div>
-          <div className="mt-4 grid grid-cols-2 gap-2 text-sm text-[#2f2a4c] sm:grid-cols-4">
+          <div className="mt-4 grid grid-cols-2 gap-2 text-sm text-[var(--foreground)] sm:grid-cols-4">
             <p>Inbox: {formatBytes(data.storage.breakdown.inboxBytes)}</p>
             <p>Sent: {formatBytes(data.storage.breakdown.sentBytes)}</p>
             <p>Trash: {formatBytes(data.storage.breakdown.trashBytes)}</p>
@@ -465,13 +486,13 @@ export function AdminDashboard() {
           </div>
         </article>
 
-        <article className="rounded-2xl border border-[#e6e0fb] bg-white p-5 shadow-sm md:p-6">
-          <h3 className="text-base font-semibold text-[#1c1b33]">Top Storage Users</h3>
+        <article className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm md:p-6">
+          <h3 className="text-base font-semibold text-[var(--foreground)]">Top Storage Users</h3>
           <div className="mt-4 space-y-2.5">
             {data.storage.topUsers.map((u) => (
-              <div key={u.userId} className="rounded-lg border border-[#f0edfb] bg-[#fcfbff] px-3 py-2">
-                <p className="truncate text-sm font-semibold text-[#26223d]">{u.email}</p>
-                <p className="text-xs text-[#5f597d]">{formatBytes(u.usedBytes)}</p>
+              <div key={u.userId} className="rounded-lg border border-[var(--border)] bg-[var(--accent-soft)] px-3 py-2">
+                <p className="truncate text-sm font-semibold text-[var(--foreground)]">{u.email}</p>
+                <p className="text-xs text-[var(--muted)]">{formatBytes(u.usedBytes)}</p>
               </div>
             ))}
           </div>
@@ -479,53 +500,53 @@ export function AdminDashboard() {
       </section>
 
       <section className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <article className="rounded-2xl border border-[#ece9fb] bg-white p-5 shadow-sm md:p-6">
-          <h3 className="text-base font-semibold text-[#1c1b33]">Emails Sent vs Received (Last 7 Days)</h3>
-          <p className="mt-1 text-sm text-[#4f4a6b]">Daily comparison of outbound and inbound volume.</p>
+        <article className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm md:p-6">
+          <h3 className="text-base font-semibold text-[var(--foreground)]">Emails Sent vs Received (Last 7 Days)</h3>
+          <p className="mt-1 text-sm text-[var(--muted)]">Daily comparison of outbound and inbound volume.</p>
           <div className="mt-5 space-y-3">
             {data.charts.emailVolumeLast7Days.map((d) => (
               <div key={d.label}>
-                <div className="mb-1 flex items-center justify-between text-xs text-[#5f597d]">
+                <div className="mb-1 flex items-center justify-between text-xs text-[var(--muted)]">
                   <span>{d.label}</span>
                   <span>
                     Sent {d.sent.toLocaleString()} / Received {d.received.toLocaleString()}
                   </span>
                 </div>
-                <div className="h-3 overflow-hidden rounded-full bg-[#f2effc]">
+                <div className="h-3 overflow-hidden rounded-full bg-[var(--background)]">
                   <div
-                    className="h-3 rounded-full bg-[#7a5cff]"
+                    className="h-3 rounded-full bg-[var(--accent)]"
                     style={{ width: `${(d.sent / sentMax) * 100}%` }}
                   />
                 </div>
                 <div className="-mt-2 h-3 overflow-hidden rounded-full">
                   <div
-                    className="h-3 rounded-full bg-[#c2b3ff]"
+                    className="h-3 rounded-full bg-[var(--accent)]/55"
                     style={{ width: `${(d.received / sentMax) * 100}%` }}
                   />
                 </div>
               </div>
             ))}
           </div>
-          <div className="mt-4 flex gap-4 text-xs text-[#5f597d]">
-            <span className="flex items-center gap-1.5"><i className="h-2 w-2 rounded-full bg-[#7a5cff]" />Sent</span>
-            <span className="flex items-center gap-1.5"><i className="h-2 w-2 rounded-full bg-[#c2b3ff]" />Received</span>
+          <div className="mt-4 flex gap-4 text-xs text-[var(--muted)]">
+            <span className="flex items-center gap-1.5"><i className="h-2 w-2 rounded-full bg-[var(--accent)]" />Sent</span>
+            <span className="flex items-center gap-1.5"><i className="h-2 w-2 rounded-full bg-[var(--accent)]/55" />Received</span>
           </div>
         </article>
 
-        <article className="rounded-2xl border border-[#ece9fb] bg-white p-5 shadow-sm md:p-6">
-          <h3 className="text-base font-semibold text-[#1c1b33]">User Growth</h3>
-          <p className="mt-1 text-sm text-[#4f4a6b]">Steady growth trend over the past 7 days.</p>
+        <article className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm md:p-6">
+          <h3 className="text-base font-semibold text-[var(--foreground)]">User Growth</h3>
+          <p className="mt-1 text-sm text-[var(--muted)]">Steady growth trend over the past 7 days.</p>
           <div className="mt-6 flex h-56 items-end justify-between gap-2">
             {data.charts.userGrowthLast7Days.map((d) => (
               <div key={d.label} className="flex flex-1 flex-col items-center gap-2">
                 <div className="relative flex h-44 w-full items-end">
                   <div
-                    className="w-full rounded-t-xl bg-gradient-to-t from-[#6d4aff] to-[#9f89ff] shadow-sm transition hover:opacity-90"
+                    className="w-full rounded-t-xl bg-gradient-to-t from-[var(--accent)] to-[#a78bfa] shadow-sm transition hover:opacity-90"
                     style={{ height: `${(d.users / userMax) * 100}%` }}
                     title={`${d.users.toLocaleString()} users`}
                   />
                 </div>
-                <div className="text-xs font-semibold text-[#5f597d]">{d.label}</div>
+                <div className="text-xs font-semibold text-[var(--muted)]">{d.label}</div>
               </div>
             ))}
           </div>
@@ -533,49 +554,49 @@ export function AdminDashboard() {
       </section>
 
       <section className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-        <article className="rounded-2xl border border-[#ece9fb] bg-white p-5 shadow-sm xl:col-span-2 md:p-6">
-          <h3 className="text-base font-semibold text-[#1c1b33]">Recent Activity</h3>
+        <article className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm xl:col-span-2 md:p-6">
+          <h3 className="text-base font-semibold text-[var(--foreground)]">Recent Activity</h3>
           <div className="mt-4 space-y-3">
             {data.recentActivity.length === 0 ? (
-              <p className="rounded-xl border border-[#f0edfb] bg-[#fcfbff] px-4 py-3 text-sm text-[#767290]">
+              <p className="rounded-xl border border-[var(--border)] bg-[var(--accent-soft)] px-4 py-3 text-sm text-[var(--muted)]">
                 No recent activity recorded yet.
               </p>
             ) : data.recentActivity.map((row) => (
               <div
                 key={row.id}
-                className="rounded-xl border border-[#f0edfb] bg-[#fcfbff] px-4 py-3 transition hover:bg-white"
+                className="rounded-xl border border-[var(--border)] bg-[var(--accent-soft)] px-4 py-3 transition hover:bg-[var(--card)]"
               >
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
-                    <p className="text-sm font-semibold text-[#24213a]">{row.title}</p>
-                    <p className="mt-1 text-xs text-[#767290]">{row.detail}</p>
+                    <p className="text-sm font-semibold text-[var(--foreground)]">{row.title}</p>
+                    <p className="mt-1 text-xs text-[var(--muted)]">{row.detail}</p>
                   </div>
                   <span className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-medium ${badgeClasses(row.severity)}`}>
                     {row.severity}
                   </span>
                 </div>
-                <p className="mt-2 text-[11px] text-[#9a95b4]">{new Date(row.createdAt).toLocaleString()}</p>
+                <p className="mt-2 text-[11px] text-[var(--muted)]">{new Date(row.createdAt).toLocaleString()}</p>
               </div>
             ))}
           </div>
         </article>
 
-        <article className="rounded-2xl border border-[#ece9fb] bg-white p-5 shadow-sm md:p-6">
-          <h3 className="text-base font-semibold text-[#1c1b33]">Alerts</h3>
+        <article className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm md:p-6">
+          <h3 className="text-base font-semibold text-[var(--foreground)]">Alerts</h3>
           <div className="mt-4 space-y-3">
             {data.alerts.length === 0 ? (
-              <p className="rounded-xl border border-[#f0edfb] bg-[#fcfbff] px-3.5 py-3 text-sm text-[#767290]">
+              <p className="rounded-xl border border-[var(--border)] bg-[var(--accent-soft)] px-3.5 py-3 text-sm text-[var(--muted)]">
                 No alerts right now.
               </p>
             ) : data.alerts.map((a) => (
-              <div key={a.id} className="rounded-xl border border-[#f0edfb] bg-[#fcfbff] px-3.5 py-3">
+              <div key={a.id} className="rounded-xl border border-[var(--border)] bg-[var(--accent-soft)] px-3.5 py-3">
                 <div className="flex items-start justify-between gap-2">
-                  <p className="text-sm font-semibold text-[#24213a]">{a.title}</p>
+                  <p className="text-sm font-semibold text-[var(--foreground)]">{a.title}</p>
                   <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase ${badgeClasses(a.severity)}`}>
                     {a.severity}
                   </span>
                 </div>
-                <p className="mt-1.5 text-xs text-[#767290]">{a.detail}</p>
+                <p className="mt-1.5 text-xs text-[var(--muted)]">{a.detail}</p>
               </div>
             ))}
           </div>
@@ -583,13 +604,13 @@ export function AdminDashboard() {
       </section>
 
       <section className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <article className="rounded-2xl border border-[#ece9fb] bg-white p-5 shadow-sm lg:col-span-2 md:p-6">
-          <h3 className="text-base font-semibold text-[#1c1b33]">Global Cleanup Controls</h3>
-          <p className="mt-1 text-sm text-[#4f4a6b]">
+        <article className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm lg:col-span-2 md:p-6">
+          <h3 className="text-base font-semibold text-[var(--foreground)]">Global Cleanup Controls</h3>
+          <p className="mt-1 text-sm text-[var(--muted)]">
             Run admin cleanup actions with preview + confirmation. Every action is audit logged.
           </p>
           <div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
-            <label htmlFor="cleanup-days" className="font-medium text-[#2f2a4c]">
+            <label htmlFor="cleanup-days" className="font-medium text-[var(--foreground)]">
               Sent message age (days):
             </label>
             <input
@@ -599,7 +620,7 @@ export function AdminDashboard() {
               max={3650}
               value={cleanupDays}
               onChange={(e) => setCleanupDays(Math.max(1, Number(e.target.value || 30)))}
-              className="w-28 rounded-lg border border-[#ddd5fb] px-2.5 py-1.5 text-sm text-[#1c1b33]"
+              className="w-28 rounded-lg border border-[var(--border)] px-2.5 py-1.5 text-sm text-[var(--foreground)]"
             />
           </div>
           <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
@@ -607,7 +628,7 @@ export function AdminDashboard() {
               type="button"
               disabled={cleanupLoading}
               onClick={() => void previewCleanup("empty_all_trash")}
-              className="rounded-xl border border-[#e6e1fa] bg-[#faf8ff] px-4 py-3 text-sm font-semibold text-[#322a67] hover:bg-white disabled:opacity-60"
+              className="rounded-xl border border-[var(--border)] bg-[var(--accent-soft)] px-4 py-3 text-sm font-semibold text-[var(--foreground)] hover:bg-[var(--card)] disabled:opacity-60"
             >
               Empty all trash
             </button>
@@ -615,7 +636,7 @@ export function AdminDashboard() {
               type="button"
               disabled={cleanupLoading}
               onClick={() => void previewCleanup("delete_deleted_messages")}
-              className="rounded-xl border border-[#e6e1fa] bg-[#faf8ff] px-4 py-3 text-sm font-semibold text-[#322a67] hover:bg-white disabled:opacity-60"
+              className="rounded-xl border border-[var(--border)] bg-[var(--accent-soft)] px-4 py-3 text-sm font-semibold text-[var(--foreground)] hover:bg-[var(--card)] disabled:opacity-60"
             >
               Delete deleted-user messages
             </button>
@@ -623,7 +644,7 @@ export function AdminDashboard() {
               type="button"
               disabled={cleanupLoading}
               onClick={() => void previewCleanup("clean_old_sent")}
-              className="rounded-xl border border-[#e6e1fa] bg-[#faf8ff] px-4 py-3 text-sm font-semibold text-[#322a67] hover:bg-white disabled:opacity-60"
+              className="rounded-xl border border-[var(--border)] bg-[var(--accent-soft)] px-4 py-3 text-sm font-semibold text-[var(--foreground)] hover:bg-[var(--card)] disabled:opacity-60"
             >
               Clean old sent
             </button>
@@ -643,7 +664,7 @@ export function AdminDashboard() {
               <Link
                 key={action.label}
                 href={action.href}
-                className="rounded-xl border border-[#e6e1fa] bg-[#faf8ff] px-4 py-3 text-center text-sm font-semibold text-[#3e347f] transition hover:-translate-y-0.5 hover:bg-white hover:shadow-sm"
+                className="rounded-xl border border-[var(--border)] bg-[var(--accent-soft)] px-4 py-3 text-center text-sm font-semibold text-[var(--foreground)] transition hover:-translate-y-0.5 hover:bg-[var(--card)] hover:shadow-sm"
               >
                 {action.label}
               </Link>
@@ -651,18 +672,18 @@ export function AdminDashboard() {
           </div>
         </article>
 
-        <article className="rounded-2xl border border-[#ece9fb] bg-white p-5 shadow-sm md:p-6">
-          <h3 className="text-base font-semibold text-[#1c1b33]">System Status</h3>
+        <article className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm md:p-6">
+          <h3 className="text-base font-semibold text-[var(--foreground)]">System Status</h3>
           <div className="mt-4 space-y-2.5">
             {data.systemStatus.map((s) => (
-              <div key={s.name} className="flex items-center justify-between rounded-lg border border-[#f1eefb] bg-[#fcfbff] px-3 py-2">
+              <div key={s.name} className="flex items-center justify-between rounded-lg border border-[var(--border)] bg-[var(--accent-soft)] px-3 py-2">
                 <div className="flex items-center gap-2">
                   <span className={`h-2.5 w-2.5 rounded-full ${statusDot(s.status)}`} />
-                  <span className="text-sm text-[#2a2740]">{s.name}</span>
+                  <span className="text-sm text-[var(--foreground)]">{s.name}</span>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-[#7b7697]">{s.status}</p>
-                  <p className="text-[11px] text-[#9a95b4]">{s.latencyMs ? `${s.latencyMs}ms` : s.message}</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">{s.status}</p>
+                  <p className="text-[11px] text-[var(--muted)]">{s.latencyMs ? `${s.latencyMs}ms` : s.message}</p>
                 </div>
               </div>
             ))}
@@ -673,23 +694,23 @@ export function AdminDashboard() {
       ) : null}
 
       {cleanupConfirm ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
-            <h3 className="text-lg font-semibold text-[#1c1b33]">{cleanupConfirm.title}</h3>
-            <p className="mt-2 text-sm text-[#4f4a6b]">{cleanupConfirm.detail}</p>
-            <div className="mt-4 rounded-xl border border-[#eee8ff] bg-[#faf8ff] p-3 text-sm text-[#2f2a4c]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4 backdrop-blur-[2px]">
+          <div className="w-full max-w-md rounded-2xl bg-[var(--card)] p-6 shadow-2xl">
+            <h3 className="text-lg font-semibold text-[var(--foreground)]">{cleanupConfirm.title}</h3>
+            <p className="mt-2 text-sm text-[var(--muted)]">{cleanupConfirm.detail}</p>
+            <div className="mt-4 rounded-xl border border-[var(--border)] bg-[var(--accent-soft)] p-3 text-sm text-[var(--foreground)]">
               <p>Affected users: {cleanupConfirm.affectedUsers.toLocaleString()}</p>
               <p>Affected messages: {cleanupConfirm.affectedMessages.toLocaleString()}</p>
               <p>Estimated recoverable: {formatBytes(cleanupConfirm.estimatedRecoverableBytes)}</p>
             </div>
             <div className="mt-3">
-              <label className="text-xs font-semibold uppercase tracking-wide text-[#5f597d]">
+              <label className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
                 Type CONFIRM to continue
               </label>
               <input
                 value={cleanupConfirmText}
                 onChange={(e) => setCleanupConfirmText(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-[#ddd5fb] px-3 py-2 text-sm text-[#1c1b33]"
+                className="mt-1 w-full rounded-xl border border-[var(--border)] px-3 py-2 text-sm text-[var(--foreground)]"
                 placeholder="CONFIRM"
               />
             </div>
@@ -697,7 +718,7 @@ export function AdminDashboard() {
               <button
                 type="button"
                 onClick={() => setCleanupConfirm(null)}
-                className="rounded-xl px-4 py-2 text-sm font-medium text-[#555370] hover:bg-[#f4f2fb]"
+                className="rounded-xl px-4 py-2 text-sm font-medium text-[var(--muted)] hover:bg-[var(--background)]"
               >
                 Cancel
               </button>

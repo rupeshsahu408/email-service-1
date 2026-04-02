@@ -23,10 +23,14 @@ export function AdminTopbar({ email }: Props) {
   const title = titleForPath(pathname);
 
   return (
-    <header className="flex items-center justify-between border-b border-[#ece9fb] bg-white px-4 py-3 md:px-6">
-      <div>
-        <h1 className="text-base font-semibold text-[#1c1b33] md:text-lg">{title}</h1>
-        <p className="text-xs font-medium text-[#595573]">Secure admin workspace</p>
+    <header className="sticky top-0 z-30 flex items-center justify-between border-b border-[var(--border)] bg-[var(--card)]/90 px-4 py-3 shadow-[0_1px_0_rgba(28,27,51,0.06)] backdrop-blur-md dark:shadow-[0_1px_0_rgba(255,255,255,0.06)] md:px-6 md:py-3.5">
+      <div className="min-w-0 pr-2">
+        <h1 className="text-base font-semibold tracking-tight text-[var(--foreground)] md:text-lg">
+          {title}
+        </h1>
+        <p className="text-xs font-medium text-[var(--muted)]">
+          Secure admin workspace
+        </p>
       </div>
       <AdminProfileMenu email={email} />
     </header>

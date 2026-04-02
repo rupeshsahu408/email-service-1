@@ -126,7 +126,7 @@ export function ResetPasswordClient() {
   return (
     <div className="min-h-screen bg-[#f3f0fd] flex flex-col">
       <header className="px-6 py-4">
-        <Link href="/" className="flex items-center gap-2 w-fit">
+        <Link href="/login" className="flex items-center gap-2 w-fit">
           <img src="/sendora-logo.png" alt="Sendora" className="w-8 h-8 object-contain" />
           <span className="text-[15px] font-bold text-[#1c1b33]">Sendora</span>
         </Link>

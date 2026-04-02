@@ -4,10 +4,18 @@ export const metadata = {
   title: "Log in — Sendora",
 };
 
-export default function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string | string[] }>;
+}) {
+  const sp = await searchParams;
+  const raw = sp.next;
+  const nextParam = Array.isArray(raw) ? raw[0] : raw;
+
   return (
     <div className="min-h-screen bg-[var(--background)]">
-      <LoginForm />
+      <LoginForm nextParam={nextParam} />
     </div>
   );
 }
