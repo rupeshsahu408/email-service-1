@@ -38,9 +38,13 @@ export async function GET(request: NextRequest) {
   }
 
   const daysRaw = request.nextUrl.searchParams.get("days");
-  const daysParsed = daysRaw == null ? undefined : Number(daysRaw);
-  if (daysRaw != null && (!Number.isFinite(daysParsed) || daysParsed < 1 || daysParsed > 3650)) {
-    return NextResponse.json({ error: "days must be between 1 and 3650" }, { status: 400 });
+  let daysParsed: number | undefined;
+  if (daysRaw != null) {
+    const n = Number(daysRaw);
+    if (!Number.isFinite(n) || n < 1 || n > 3650) {
+      return NextResponse.json({ error: "days must be between 1 and 3650" }, { status: 400 });
+    }
+    daysParsed = n;
   }
   if (actionNeedsDays(parsedAction.data) && daysParsed == null) {
     return NextResponse.json(

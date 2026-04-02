@@ -46,6 +46,13 @@ function toNumber(v: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+function firstRowValue(
+  rows: Array<Record<string, unknown>>,
+  key: string
+): unknown {
+  return rows[0]?.[key];
+}
+
 function cleanupWhere(action: AdminCleanupAction, days?: number) {
   if (action === "empty_all_trash") {
     return eq(messages.folder, "trash");
@@ -203,26 +210,40 @@ export async function getAdminStorageOverview(): Promise<AdminStorageOverview> {
   ]);
 
   const totalCapacityBytes = toNumber(capacityRow[0]?.bytes);
+  const composeDraftBytes = toNumber(
+    firstRowValue(composeDraftRow as unknown as Array<Record<string, unknown>>, "bytes")
+  );
+  const scheduledTextBytes = toNumber(
+    firstRowValue(scheduledTextRow as unknown as Array<Record<string, unknown>>, "bytes")
+  );
+  const scheduledAttachmentBytes = toNumber(
+    firstRowValue(scheduledAttachmentRow as unknown as Array<Record<string, unknown>>, "bytes")
+  );
+  const confidentialBytes = toNumber(
+    firstRowValue(confidentialRow as unknown as Array<Record<string, unknown>>, "bytes")
+  );
+  const tempInboxBytes = toNumber(
+    firstRowValue(tempInboxRow as unknown as Array<Record<string, unknown>>, "bytes")
+  );
+
   const totalUsedBytes =
     toNumber(mailboxContentRow[0]?.bytes) +
     toNumber(mailboxAttachmentRow[0]?.bytes) +
-    toNumber((composeDraftRow as Array<{ bytes: unknown }>)[0]?.bytes) +
+    composeDraftBytes +
     toNumber(composeAttachmentRow[0]?.bytes) +
-    toNumber((scheduledTextRow as Array<{ bytes: unknown }>)[0]?.bytes) +
-    toNumber((scheduledAttachmentRow as Array<{ bytes: unknown }>)[0]?.bytes) +
-    toNumber((confidentialRow as Array<{ bytes: unknown }>)[0]?.bytes) +
-    toNumber((tempInboxRow as Array<{ bytes: unknown }>)[0]?.bytes);
+    scheduledTextBytes +
+    scheduledAttachmentBytes +
+    confidentialBytes +
+    tempInboxBytes;
   const totalFreeBytes = Math.max(totalCapacityBytes - totalUsedBytes, 0);
   const usagePercent =
     totalCapacityBytes > 0 ? Math.round((totalUsedBytes / totalCapacityBytes) * 1000) / 10 : 0;
 
-  const topUsers = (topUsersRows as Array<{ user_id: string; local_part: string; used_bytes: unknown }>).map(
-    (row) => ({
-      userId: row.user_id,
-      email: `${row.local_part}@sendora.com`,
-      usedBytes: toNumber(row.used_bytes),
-    })
-  );
+  const topUsers = (topUsersRows as unknown as Array<Record<string, unknown>>).map((row) => ({
+    userId: String(row.user_id ?? ""),
+    email: `${String(row.local_part ?? "")}@sendora.com`,
+    usedBytes: toNumber(row.used_bytes),
+  }));
 
   return {
     totalCapacityBytes,
