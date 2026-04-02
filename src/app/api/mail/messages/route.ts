@@ -3,8 +3,10 @@ import {
   and,
   desc,
   eq,
+  gte,
   ilike,
   inArray,
+  lte,
   ne,
   or,
   sql,
@@ -35,6 +37,12 @@ function sanitizeSearchTerm(q: string): string {
   return q.trim().slice(0, 200).replace(/[^\p{L}\p{N}\s.@+-]/gu, "");
 }
 
+function parseOptionalIsoDate(raw: string | null): Date | null {
+  if (!raw || raw.length > 40) return null;
+  const d = new Date(raw);
+  return Number.isFinite(d.getTime()) ? d : null;
+}
+
 function parseListPaging(sp: URLSearchParams): { limit: number; offset: number } {
   const rawLimit = Number.parseInt(sp.get("limit") ?? `${MAX_PAGE}`, 10);
   const rawOffset = Number.parseInt(sp.get("offset") ?? "0", 10);
@@ -59,6 +67,8 @@ export async function GET(request: NextRequest) {
   const labelIdRaw = sp.get("labelId");
   const qRaw = sp.get("q") ?? "";
   const hasAttachment = sp.get("hasAttachment") === "1";
+  const sinceDate = parseOptionalIsoDate(sp.get("since"));
+  const untilDate = parseOptionalIsoDate(sp.get("until"));
 
   const db = getDb();
   if (folderParam === "trash") {
@@ -97,6 +107,9 @@ export async function GET(request: NextRequest) {
   }
 
   if (hasAttachment) baseConds.push(eq(messages.hasAttachment, true));
+
+  if (sinceDate) baseConds.push(gte(messages.createdAt, sinceDate));
+  if (untilDate) baseConds.push(lte(messages.createdAt, untilDate));
 
   if (searchPattern) {
     baseConds.push(

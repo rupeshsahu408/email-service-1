@@ -200,6 +200,11 @@ export async function rateLimitSend(
   return memoryLimit(`send:${userId}`, 50, 3_600_000);
 }
 
+/** Shared Upstash REST client for TTL caches (optional; null if env missing). */
+export function getUpstashRedis(): Redis | null {
+  return getRedis();
+}
+
 export async function rateLimitAiWrite(
   userId: string
 ): Promise<{ success: boolean }> {

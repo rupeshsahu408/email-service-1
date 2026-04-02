@@ -20,9 +20,12 @@ export async function GET(req: Request) {
   }
 
   const range = parsed.data;
+  const useAiCategories = searchParams.get("ai") === "1";
 
   try {
-    const data = await getUserAnalytics(user.id, user.localPart, range);
+    const data = await getUserAnalytics(user.id, user.localPart, range, {
+      useAiCategories,
+    });
     return NextResponse.json(data);
   } catch {
     return NextResponse.json(

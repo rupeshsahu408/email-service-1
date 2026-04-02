@@ -158,19 +158,92 @@ function flatThreadMap(rows: Row[]): Map<string, Row[]> {
   return m;
 }
 
-function buildListQuery(nav: Nav, q: string): string {
+type ListQueryExtras = {
+  since?: string;
+  until?: string;
+  folderOverride?: Folder | "starred";
+};
+
+function buildListQuery(
+  nav: Nav,
+  q: string,
+  extras?: ListQueryExtras
+): string {
   const params = new URLSearchParams();
-  if (nav.kind === "label") {
+  const fo = extras?.folderOverride;
+  if (nav.kind === "label" && !fo) {
     params.set("folder", "inbox");
     params.set("labelId", nav.labelId);
-  } else if (nav.folder === "starred") {
+  } else if (fo === "starred" || (!fo && nav.kind === "folder" && nav.folder === "starred")) {
     params.set("folder", "starred");
-  } else {
+  } else if (fo) {
+    params.set("folder", fo);
+  } else if (nav.kind === "folder") {
     params.set("folder", nav.folder);
+  } else {
+    params.set("folder", "inbox");
   }
   const term = q.trim();
   if (term) params.set("q", term);
+  if (extras?.since) params.set("since", extras.since);
+  if (extras?.until) params.set("until", extras.until);
   return params.toString();
+}
+
+async function resolveMailListQuery(
+  nav: Nav,
+  searchDebounced: string,
+  aiSearchEnabled: boolean
+): Promise<string> {
+  let q = searchDebounced;
+  let extras: ListQueryExtras | undefined;
+
+  const canNl =
+    aiSearchEnabled &&
+    searchDebounced.trim().length > 0 &&
+    !(nav.kind === "folder" && nav.folder === "scheduled");
+
+  if (canNl) {
+    try {
+      const res = await fetch("/api/ai/natural-mail-search", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ query: searchDebounced }),
+      });
+      if (res.ok) {
+        const j = (await res.json()) as {
+          plan?: {
+            q?: string;
+            folder?: string;
+            sinceIso?: string;
+            untilIso?: string;
+          };
+        };
+        const p = j.plan;
+        if (p) {
+          q = typeof p.q === "string" ? p.q : "";
+          extras = {};
+          if (p.sinceIso) extras.since = p.sinceIso;
+          if (p.untilIso) extras.until = p.untilIso;
+          const f = p.folder;
+          if (
+            f === "inbox" ||
+            f === "sent" ||
+            f === "spam" ||
+            f === "archive" ||
+            f === "trash"
+          ) {
+            extras.folderOverride = f;
+          }
+        }
+      }
+    } catch {
+      /* use plain q */
+    }
+  }
+
+  return buildListQuery(nav, q, extras);
 }
 
 function groupThreads(rows: Row[]): Map<string, Row[]> {
@@ -466,6 +539,14 @@ export function InboxClient({
   const [composeReplySeed, setComposeReplySeed] = useState<ComposeReplySeed | null>(null);
   const [searchQ, setSearchQ] = useState("");
   const [searchDebounced, setSearchDebounced] = useState("");
+  const [aiSearchEnabled, setAiSearchEnabled] = useState(false);
+  const [intelById, setIntelById] = useState<
+    Record<string, { priority: "high" | "medium" | "low"; tips: string[] }>
+  >({});
+  const [aiPanelOpen, setAiPanelOpen] = useState(false);
+  const [aiQuestion, setAiQuestion] = useState("");
+  const [aiAnswer, setAiAnswer] = useState("");
+  const [aiAnswerLoading, setAiAnswerLoading] = useState(false);
   type ListFilter = "all" | "read" | "unread" | "starred" | "unstarred";
   const [listFilter, setListFilter] = useState<ListFilter>("all");
   const [listRefreshing, setListRefreshing] = useState(false);
@@ -694,7 +775,7 @@ export function InboxClient({
       }
 
       setScheduledJobs([]);
-      const qs = buildListQuery(nav, searchDebounced);
+      const qs = await resolveMailListQuery(nav, searchDebounced, aiSearchEnabled);
       const res = await fetch(`/api/mail/messages?${qs}`, {
         credentials: "include",
         cache: "no-store",
@@ -717,7 +798,48 @@ export function InboxClient({
     return () => {
       cancelled = true;
     };
-  }, [nav, searchDebounced, refreshFolderCounts]);
+  }, [nav, searchDebounced, aiSearchEnabled, refreshFolderCounts]);
+
+  useEffect(() => {
+    if (isScheduledNav || rows.length === 0) {
+      setIntelById({});
+      return;
+    }
+    let cancelled = false;
+    const ids = rows.slice(0, 32).map((r) => r.id);
+    void (async () => {
+      try {
+        const res = await fetch("/api/ai/inbox-intelligence", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ ids, useAiTips: false }),
+        });
+        if (!res.ok || cancelled) return;
+        const data = (await res.json()) as {
+          rows?: Array<{
+            id: string;
+            priority: "high" | "medium" | "low";
+            tips: string[];
+          }>;
+        };
+        if (cancelled) return;
+        const m: Record<
+          string,
+          { priority: "high" | "medium" | "low"; tips: string[] }
+        > = {};
+        for (const r of data.rows ?? []) {
+          m[r.id] = { priority: r.priority, tips: r.tips ?? [] };
+        }
+        setIntelById(m);
+      } catch {
+        if (!cancelled) setIntelById({});
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [rows, isScheduledNav]);
 
   // Draft load/save and editor state are handled inside `ComposeClient`.
 
@@ -740,7 +862,13 @@ export function InboxClient({
 
   const displayRows = useMemo(() => {
     const r = [...rows];
-    if (unreadFirst && nav.kind === "folder" && nav.folder === "inbox" && !searchDebounced.trim()) {
+    if (
+      unreadFirst &&
+      nav.kind === "folder" &&
+      nav.folder === "inbox" &&
+      !searchDebounced.trim() &&
+      !aiSearchEnabled
+    ) {
       r.sort((a, b) => {
         const ua = a.readAt ? 1 : 0;
         const ub = b.readAt ? 1 : 0;
@@ -749,7 +877,7 @@ export function InboxClient({
       });
     }
     return r;
-  }, [rows, unreadFirst, nav, searchDebounced]);
+  }, [rows, unreadFirst, nav, searchDebounced, aiSearchEnabled]);
 
   const filteredRows = useMemo(() => {
     if (listFilter === "all") return displayRows;
@@ -824,7 +952,7 @@ export function InboxClient({
       setScheduledJobs(data.jobs ?? []);
       return;
     }
-    const qs = buildListQuery(nav, searchDebounced);
+    const qs = await resolveMailListQuery(nav, searchDebounced, aiSearchEnabled);
     const res = await fetch(`/api/mail/messages?${qs}`, {
       credentials: "include",
       cache: "no-store",
@@ -1622,6 +1750,74 @@ export function InboxClient({
             </Link>
           ))}
           {!sidebarCollapsed && (
+            <div className="mt-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 space-y-2">
+              <button
+                type="button"
+                onClick={() => setAiPanelOpen((o) => !o)}
+                className="w-full flex items-center justify-between gap-2 text-left text-xs font-semibold text-[#c5c3d8] hover:text-white"
+              >
+                <span>AI assistant</span>
+                <span className="text-[#8b87a8] tabular-nums" aria-hidden>
+                  {aiPanelOpen ? "−" : "+"}
+                </span>
+              </button>
+              {aiPanelOpen ? (
+                <div className="space-y-2">
+                  <p className="text-[10px] leading-snug text-[#8b87a8]">
+                    Ask about your mailbox. Uses your last 7 days of analytics
+                    (rate-limited).
+                  </p>
+                  <textarea
+                    className="w-full rounded-lg bg-[#2a2840] border border-white/10 text-xs text-white placeholder:text-[#6f6d82] p-2 min-h-[68px] outline-none focus:border-[#6d4aff]"
+                    value={aiQuestion}
+                    onChange={(e) => setAiQuestion(e.target.value)}
+                    placeholder='e.g. "Who do I talk to the most?"'
+                  />
+                  <button
+                    type="button"
+                    disabled={aiAnswerLoading || !aiQuestion.trim()}
+                    onClick={() => {
+                      void (async () => {
+                        setAiAnswerLoading(true);
+                        setAiAnswer("");
+                        try {
+                          const res = await fetch("/api/ai/mailbox-assistant", {
+                            method: "POST",
+                            headers: { "content-type": "application/json" },
+                            credentials: "include",
+                            body: JSON.stringify({
+                              question: aiQuestion.trim(),
+                              range: "7d",
+                            }),
+                          });
+                          const j = (await res.json().catch(() => ({}))) as {
+                            answer?: string;
+                            error?: string;
+                          };
+                          setAiAnswer(
+                            typeof j.answer === "string"
+                              ? j.answer
+                              : j.error ?? "No answer."
+                          );
+                        } finally {
+                          setAiAnswerLoading(false);
+                        }
+                      })();
+                    }}
+                    className="w-full rounded-lg py-2 text-xs font-semibold bg-[#6d4aff] text-white hover:opacity-95 disabled:opacity-45"
+                  >
+                    {aiAnswerLoading ? "Asking…" : "Ask AI"}
+                  </button>
+                  {aiAnswer ? (
+                    <p className="text-[11px] text-[#e8e6f4] whitespace-pre-wrap max-h-44 overflow-y-auto leading-relaxed border-t border-white/10 pt-2">
+                      {aiAnswer}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          )}
+          {!sidebarCollapsed && (
             <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
               <div className="flex items-center gap-2">
                 <div className="h-8 w-8 overflow-hidden rounded-full bg-[#6d4aff]/40 text-xs font-semibold text-white">
@@ -1656,27 +1852,53 @@ export function InboxClient({
           }}
         >
           {/* Top bar */}
-          <div className="flex items-center gap-2 px-3 py-3 border-b border-[#f0edfb]">
-            <button
-              className="p-1.5 rounded-lg hover:bg-[#f3f0fd] text-[#65637e]"
-              onClick={toggleSidebar}
-            >
-              <IconMenu />
-            </button>
-            <div className="flex flex-1 items-center gap-2 bg-[#f3f0fd] rounded-xl px-3 py-2">
-              <IconSearch />
-              <input
-                className="flex-1 min-w-0 bg-transparent text-sm outline-none text-[#1c1b33] placeholder:text-[#9896b4]"
-                placeholder={isScheduledNav ? "Search scheduled" : "Search messages"}
-                value={searchQ}
-                onChange={(e) => setSearchQ(e.target.value)}
-              />
-              {searchQ && (
-                <button onClick={() => setSearchQ("")} className="text-[#9896b4] hover:text-[#6d4aff] transition-colors">
-                  <IconClose />
-                </button>
-              )}
+          <div className="flex flex-col gap-1.5 px-3 py-3 border-b border-[#f0edfb]">
+            <div className="flex items-center gap-2">
+              <button
+                className="p-1.5 rounded-lg hover:bg-[#f3f0fd] text-[#65637e]"
+                onClick={toggleSidebar}
+              >
+                <IconMenu />
+              </button>
+              <div className="flex flex-1 items-center gap-2 bg-[#f3f0fd] rounded-xl px-3 py-2 min-w-0">
+                <IconSearch />
+                <input
+                  className="flex-1 min-w-0 bg-transparent text-sm outline-none text-[#1c1b33] placeholder:text-[#9896b4]"
+                  placeholder={
+                    isScheduledNav
+                      ? "Search scheduled"
+                      : aiSearchEnabled
+                        ? "AI: e.g. emails from last week about payment"
+                        : "Search messages"
+                  }
+                  value={searchQ}
+                  onChange={(e) => setSearchQ(e.target.value)}
+                />
+                {searchQ && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQ("")}
+                    className="text-[#9896b4] hover:text-[#6d4aff] transition-colors shrink-0"
+                  >
+                    <IconClose />
+                  </button>
+                )}
+              </div>
             </div>
+            {!isScheduledNav ? (
+              <label className="flex items-center gap-2 pl-1 text-[11px] text-[#65637e] cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  className="rounded border-[#d9d3f3] accent-[#6d4aff] h-3.5 w-3.5 shrink-0"
+                  checked={aiSearchEnabled}
+                  onChange={(e) => setAiSearchEnabled(e.target.checked)}
+                />
+                <span>
+                  <span className="font-semibold text-[#5b3dff]">AI</span> natural
+                  language search
+                </span>
+              </label>
+            ) : null}
           </div>
 
           {storageNotice.message && (
@@ -1842,6 +2064,7 @@ export function InboxClient({
               threadIdsSorted.map((tid) => {
                 const msgs = threadMap.get(tid)!;
                 const rep = msgs[0];
+                const intel = intelById[rep.id];
                 const isRead = rep.readAt !== null;
                 const isSelected = selectedId === rep.id || (conversationOn && msgs.some((m) => m.id === selectedId));
 
@@ -1926,6 +2149,21 @@ export function InboxClient({
                         </div>
                         <div className={`text-xs mt-0.5 truncate flex items-center gap-2 min-w-0 ${!isRead ? "font-medium text-[#1c1b33]" : "text-[#65637e]"}`}>
                           <span className="truncate">{rep.subject || "(no subject)"}</span>
+                          {intel && intel.priority === "high" ? (
+                            <span
+                              className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-orange-800 bg-orange-50 border border-orange-100 rounded px-1 py-0.5"
+                              title={intel.tips.length ? intel.tips.join(" · ") : "AI priority"}
+                            >
+                              AI · High
+                            </span>
+                          ) : intel && intel.priority === "medium" ? (
+                            <span
+                              className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-[#5b4d00] bg-amber-50 border border-amber-100 rounded px-1 py-0.5"
+                              title={intel.tips.length ? intel.tips.join(" · ") : "AI priority"}
+                            >
+                              AI · Med
+                            </span>
+                          ) : null}
                           {isSentNav && rep.sentAnonymously ? (
                             <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-[#5b3dff] bg-[#ede8ff] rounded px-1.5 py-0.5">
                               Anonymous

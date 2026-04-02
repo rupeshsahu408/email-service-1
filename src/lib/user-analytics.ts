@@ -349,10 +349,15 @@ export type UserAnalyticsPayload = {
   phase4: Phase4Payload;
 };
 
+export type GetUserAnalyticsOptions = {
+  useAiCategories?: boolean;
+};
+
 export async function getUserAnalytics(
   userId: string,
   userLocalPart: string,
-  range: UserAnalyticsRange
+  range: UserAnalyticsRange,
+  options?: GetUserAnalyticsOptions
 ): Promise<UserAnalyticsPayload> {
   const now = new Date();
   const { start, end } = getUserAnalyticsTimeRange(range, now);
@@ -429,7 +434,9 @@ export async function getUserAnalytics(
       .where(and(baseTime, eq(messages.folder, "sent")))
       .groupBy(messages.toAddr),
     computePhase2Block(userId, start, end, now),
-    computePhase3Analytics(userId, selfEmail, start, end),
+    computePhase3Analytics(userId, selfEmail, start, end, {
+      useAiCategories: options?.useAiCategories === true,
+    }),
     fetchHourlyActivityUtcBuckets(userId, start, end),
     range !== "today"
       ? computeAverageReplyTimeMsForWindow(userId, prevStart, start)

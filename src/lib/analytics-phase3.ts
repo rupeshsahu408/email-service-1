@@ -1,8 +1,10 @@
 import { and, eq, gte, lte, ne, sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import { messages } from "@/db/schema";
+import { batchRefineCategoriesWithAi } from "@/lib/ai-category-refine";
 import {
   classifyEmailForAnalytics,
+  shouldRefineCategoryWithAi,
   type EmailAnalyticsCategory,
 } from "@/lib/email-analytics-category";
 
@@ -40,6 +42,8 @@ export type Phase3Payload = {
     topCategory: EmailAnalyticsCategory | null;
     topCategoryPercentage: number | null;
     insightLine: string;
+    usedAiRefinement: boolean;
+    aiRefinedMessageCount: number;
   };
   phase3ComputedAt: string;
 };
@@ -99,23 +103,31 @@ function emptyPhase3(reason: string): Phase3Payload {
       topCategory: null,
       topCategoryPercentage: null,
       insightLine: reason,
+      usedAiRefinement: false,
+      aiRefinedMessageCount: 0,
     },
     phase3ComputedAt: now,
   };
 }
 
+export type ComputePhase3Options = {
+  useAiCategories?: boolean;
+};
+
 export async function computePhase3Analytics(
   userId: string,
   selfEmailLower: string,
   rangeStart: Date,
-  rangeEnd: Date
+  rangeEnd: Date,
+  opts?: ComputePhase3Options
 ): Promise<Phase3Payload> {
   try {
     return await computePhase3AnalyticsCore(
       userId,
       selfEmailLower,
       rangeStart,
-      rangeEnd
+      rangeEnd,
+      opts
     );
   } catch {
     return emptyPhase3(
@@ -128,7 +140,8 @@ async function computePhase3AnalyticsCore(
   userId: string,
   selfEmailLower: string,
   rangeStart: Date,
-  rangeEnd: Date
+  rangeEnd: Date,
+  opts?: ComputePhase3Options
 ): Promise<Phase3Payload> {
   const nowIso = new Date().toISOString();
   const db = getDb();
@@ -260,6 +273,7 @@ async function computePhase3AnalyticsCore(
 
   const catRows = await db
     .select({
+      id: messages.id,
       folder: messages.folder,
       spamScore: messages.spamScore,
       subject: messages.subject,
@@ -284,6 +298,8 @@ async function computePhase3AnalyticsCore(
     spam: 0,
   };
 
+  const perIdCategory = new Map<string, EmailAnalyticsCategory>();
+
   for (const row of catRows) {
     const counterpartyAddr =
       row.folder === "sent" ? row.toAddr : row.fromAddr;
@@ -294,7 +310,57 @@ async function computePhase3AnalyticsCore(
       bodyPreview: row.bodyPreview ?? "",
       counterpartyAddr: counterpartyAddr ?? "",
     });
+    perIdCategory.set(row.id, bucket);
     catCount[bucket] += 1;
+  }
+
+  let usedAiRefinement = false;
+  let aiRefinedMessageCount = 0;
+  const wantAi =
+    !!opts?.useAiCategories && !!process.env.GEMINI_API_KEY?.trim();
+
+  if (wantAi && catRows.length > 0) {
+    const refinePayload: Array<{
+      id: string;
+      subject: string;
+      counterpartyLine: string;
+      folder: string;
+      ruleCategory: EmailAnalyticsCategory;
+    }> = [];
+    for (const row of catRows) {
+      const counterpartyAddr =
+        row.folder === "sent" ? row.toAddr : row.fromAddr;
+      const ruleCat = perIdCategory.get(row.id)!;
+      const clsInput = {
+        folder: row.folder,
+        spamScore: Number(row.spamScore ?? 0),
+        subject: row.subject ?? "",
+        bodyPreview: row.bodyPreview ?? "",
+        counterpartyAddr: counterpartyAddr ?? "",
+      };
+      if (shouldRefineCategoryWithAi(clsInput, ruleCat)) {
+        refinePayload.push({
+          id: row.id,
+          subject: row.subject ?? "",
+          counterpartyLine: counterpartyAddr ?? "",
+          folder: row.folder,
+          ruleCategory: ruleCat,
+        });
+      }
+    }
+    const capped = refinePayload.slice(0, 28);
+    if (capped.length > 0) {
+      const overrides = await batchRefineCategoriesWithAi(capped);
+      for (const [id, aiCat] of overrides) {
+        const prev = perIdCategory.get(id);
+        if (!prev || prev === aiCat) continue;
+        catCount[prev] -= 1;
+        catCount[aiCat] += 1;
+        perIdCategory.set(id, aiCat);
+        aiRefinedMessageCount += 1;
+      }
+      usedAiRefinement = aiRefinedMessageCount > 0;
+    }
   }
 
   const total =
@@ -335,7 +401,11 @@ async function computePhase3AnalyticsCore(
 
   let insightLine = "No categorized email in this range yet.";
   if (total > 0 && topCategory !== null && topCategoryPercentage !== null) {
-    insightLine = `${topCategoryPercentage}% of your email in this range looks ${label[topCategory]} by rule-based signals.`;
+    if (usedAiRefinement) {
+      insightLine = `${topCategoryPercentage}% of your email in this range looks ${label[topCategory]} after rules plus AI refinement on ${aiRefinedMessageCount} ambiguous message${aiRefinedMessageCount === 1 ? "" : "s"}.`;
+    } else {
+      insightLine = `${topCategoryPercentage}% of your email in this range looks ${label[topCategory]} by rule-based signals.`;
+    }
   }
 
   return {
@@ -355,6 +425,8 @@ async function computePhase3AnalyticsCore(
       topCategory,
       topCategoryPercentage,
       insightLine,
+      usedAiRefinement,
+      aiRefinedMessageCount,
     },
     phase3ComputedAt: nowIso,
   };

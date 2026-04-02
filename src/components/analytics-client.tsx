@@ -70,6 +70,8 @@ type AnalyticsApiResponse = {
       topCategory: "business" | "personal" | "finance" | "spam" | null;
       topCategoryPercentage: number | null;
       insightLine: string;
+      usedAiRefinement: boolean;
+      aiRefinedMessageCount: number;
     };
     phase3ComputedAt: string;
   };
@@ -319,18 +321,23 @@ function ActivityChart({ series }: { series: AnalyticsApiResponse["series"] }) {
 
 export function AnalyticsClient({ email }: { email: string }) {
   const [range, setRange] = useState<AnalyticsRange>("7d");
+  const [useAiCategories, setUseAiCategories] = useState(false);
   const [data, setData] = useState<AnalyticsApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async (r: AnalyticsRange) => {
+  const load = useCallback(async (r: AnalyticsRange, ai: boolean) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/analytics?range=${encodeURIComponent(r)}`, {
+      const aiParam = ai ? "&ai=1" : "";
+      const res = await fetch(
+        `/api/analytics?range=${encodeURIComponent(r)}${aiParam}`,
+        {
         credentials: "same-origin",
         cache: "no-store",
-      });
+        }
+      );
       if (!res.ok) {
         const j = (await res.json().catch(() => ({}))) as { error?: string };
         throw new Error(j.error ?? "Failed to load analytics");
@@ -346,8 +353,8 @@ export function AnalyticsClient({ email }: { email: string }) {
   }, []);
 
   useEffect(() => {
-    void load(range);
-  }, [range, load]);
+    void load(range, useAiCategories);
+  }, [range, useAiCategories, load]);
 
   const isEmpty =
     data &&
@@ -813,14 +820,48 @@ export function AnalyticsClient({ email }: { email: string }) {
                 </section>
 
                 <section className="mt-10 rounded-2xl border border-[#e8e4f8] bg-white p-5 shadow-sm sm:p-6">
-                  <h2 className="text-lg font-bold text-[#1c1b33]">
-                    Category analytics
-                  </h2>
-                  <p className="mt-0.5 text-sm text-[#65637e]">
-                    Rule-based labels from sender context, subject/body keywords,
-                    spam folder, and spam score—ready to swap for AI later.
-                    Default when uncertain is personal.
-                  </p>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <h2 className="text-lg font-bold text-[#1c1b33]">
+                        Category analytics
+                      </h2>
+                      <p className="mt-0.5 text-sm text-[#65637e]">
+                        Hybrid: strong signals use rules; optional{" "}
+                        <span className="font-semibold text-[#5b3dff]">AI</span>{" "}
+                        can refine ambiguous &quot;personal&quot; buckets (server
+                        needs <code className="text-xs">GEMINI_API_KEY</code>).
+                      </p>
+                    </div>
+                    <label className="inline-flex items-center gap-2 rounded-xl border border-[#e8e4f8] bg-[#faf9fe] px-3 py-2 text-sm text-[#44435a] cursor-pointer select-none shrink-0">
+                      <input
+                        type="checkbox"
+                        className="rounded border-[#d9d3f3] accent-[#6d4aff]"
+                        checked={useAiCategories}
+                        onChange={(e) => setUseAiCategories(e.target.checked)}
+                      />
+                      <span>
+                        Use <span className="font-semibold text-[#5b3dff]">AI</span>{" "}
+                        refinement
+                      </span>
+                    </label>
+                  </div>
+                  {data.phase3.categories.usedAiRefinement &&
+                  data.phase3.categories.aiRefinedMessageCount > 0 ? (
+                    <p className="mt-3 text-xs font-medium text-[#5b3dff]">
+                      AI relabeled{" "}
+                      {data.phase3.categories.aiRefinedMessageCount} ambiguous
+                      message
+                      {data.phase3.categories.aiRefinedMessageCount === 1
+                        ? ""
+                        : "s"}{" "}
+                      in this range.
+                    </p>
+                  ) : useAiCategories ? (
+                    <p className="mt-3 text-xs text-[#9896b4]">
+                      No ambiguous rows needed AI in this range, or AI is
+                      unavailable.
+                    </p>
+                  ) : null}
                   <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
                     <SummaryCard
                       title="Business"

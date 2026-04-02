@@ -178,3 +178,35 @@ export function classifyEmailForAnalytics(
 
   return "personal";
 }
+
+/**
+ * Hybrid AI path: “default personal” rows with no personal keywords / consumer
+ * mailbox / business-domain hints — good candidates for Gemini refinement.
+ */
+export function shouldRefineCategoryWithAi(
+  input: ClassifyEmailForAnalyticsInput,
+  ruleCategory: EmailAnalyticsCategory
+): boolean {
+  if (ruleCategory === "spam") return false;
+  if (input.folder === "spam" || input.spamScore >= 5) return false;
+  const subj = (input.subject ?? "").toLowerCase();
+  const body = (input.bodyPreview ?? "").toLowerCase();
+  const blob = `${subj}\n${body}`;
+
+  if (textIncludesAny(blob, SPAM_PHRASES)) return false;
+  if (ruleCategory === "finance" || ruleCategory === "business") return false;
+  if (textIncludesAny(blob, PERSONAL_KEYWORDS)) return false;
+
+  const dom = extractDomainFromAddr(input.counterpartyAddr);
+  if (dom && CONSUMER_DOMAINS.has(dom)) return false;
+  if (dom) {
+    for (const h of BUSINESS_DOMAIN_HINTS) {
+      if (dom === h || dom.endsWith(`.${h}`)) return false;
+    }
+  }
+
+  const len = (input.subject?.length ?? 0) + (input.bodyPreview?.length ?? 0);
+  if (len < 12) return false;
+
+  return ruleCategory === "personal";
+}
