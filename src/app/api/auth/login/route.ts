@@ -96,7 +96,13 @@ export async function POST(request: NextRequest) {
       );
     const failedCount = Number(failedRows[0]?.c ?? 0);
     const attemptLimit = Number(settings.security.maxLoginAttempts ?? 0);
-    if (attemptLimit > 0 && failedCount >= attemptLimit) {
+    // Admins always bypass this lockout (wrong password still fails below).
+    // 0 = unlimited (no lockout).
+    if (
+      !user.isAdmin &&
+      attemptLimit > 0 &&
+      failedCount >= attemptLimit
+    ) {
       return NextResponse.json(
         { error: "Too many failed attempts. Try again later or reset your password." },
         { status: 429 }

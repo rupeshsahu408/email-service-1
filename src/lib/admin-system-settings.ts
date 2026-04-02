@@ -203,6 +203,20 @@ export async function ensureAdminSystemSettingsTable(): Promise<void> {
     values (1, ${JSON.stringify(DEFAULT_SETTINGS)}::jsonb, now())
     on conflict (id) do nothing
   `);
+  // Legacy rows may still have maxLoginAttempts = 10 from an older default; 0 means unlimited.
+  await getDb().execute(sql`
+    update admin_system_settings
+    set
+      data = jsonb_set(
+        coalesce(data, '{}'::jsonb),
+        '{security,maxLoginAttempts}',
+        '0'::jsonb,
+        true
+      ),
+      updated_at = now()
+    where id = 1
+      and coalesce((data->'security'->>'maxLoginAttempts')::int, -1) = 10
+  `);
   ensured = true;
 }
 
