@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { eq } from "drizzle-orm";
+import { getDb } from "@/db";
+import { users } from "@/db/schema";
 import { getUserAnalytics } from "@/lib/user-analytics";
 import { getCurrentUser } from "@/lib/session";
+import {
+  tryResolveMailboxAccess,
+  canViewTeamAnalytics,
+} from "@/lib/workspace-access";
 
 export const dynamic = "force-dynamic";
 
@@ -21,9 +28,28 @@ export async function GET(req: Request) {
 
   const range = parsed.data;
   const useAiCategories = searchParams.get("ai") === "1";
+  const rawFor = searchParams.get("forUserId");
+  const forUserId =
+    rawFor && /^[0-9a-f-]{36}$/i.test(rawFor) ? rawFor : null;
+
+  let analyticsUserId = user.id;
+  let localPart = user.localPart;
+  if (forUserId && forUserId !== user.id) {
+    const access = await tryResolveMailboxAccess(user.id, forUserId);
+    if (!access || !canViewTeamAnalytics(access)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    analyticsUserId = access.inboxOwnerUserId;
+    const [row] = await getDb()
+      .select({ localPart: users.localPart })
+      .from(users)
+      .where(eq(users.id, analyticsUserId))
+      .limit(1);
+    if (row) localPart = row.localPart;
+  }
 
   try {
-    const data = await getUserAnalytics(user.id, user.localPart, range, {
+    const data = await getUserAnalytics(analyticsUserId, localPart, range, {
       useAiCategories,
     });
     return NextResponse.json(data);

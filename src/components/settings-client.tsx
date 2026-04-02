@@ -16,6 +16,7 @@ type SectionId =
   | "compose"
   | "labels"
   | "filters"
+  | "automation"
   | "privacy"
   | "notifications"
   | "storage"
@@ -123,6 +124,7 @@ const navItems: { id: SectionId; label: string; hint?: string }[] = [
   { id: "compose", label: "Compose" },
   { id: "labels", label: "Labels" },
   { id: "filters", label: "Block & filters" },
+  { id: "automation", label: "Automation & team" },
   { id: "privacy", label: "Privacy" },
   { id: "notifications", label: "Notifications" },
   { id: "storage", label: "Storage" },
@@ -405,6 +407,13 @@ export function SettingsClient({
               rules={data.rules}
               labels={data.labels}
               onReload={load}
+              showToast={showToast}
+              setErr={setErr}
+            />
+          )}
+          {section === "automation" && (
+            <AutomationPanel
+              labels={data.labels}
               showToast={showToast}
               setErr={setErr}
             />
@@ -1600,6 +1609,314 @@ function LabelsPanel({
         })}
       </ul>
     </Panel>
+  );
+}
+
+type AutomationRuleRow = {
+  id: string;
+  name: string;
+  enabled: boolean;
+  sortOrder: number;
+  conditions: unknown;
+  actions: unknown;
+};
+
+function AutomationPanel({
+  labels,
+  showToast,
+  setErr,
+}: {
+  labels: Overview["labels"];
+  showToast: (s: string) => void;
+  setErr: (s: string) => void;
+}) {
+  const [rules, setRules] = useState<AutomationRuleRow[]>([]);
+  const [workflows, setWorkflows] = useState<
+    { id: string; name: string; enabled: boolean }[]
+  >([]);
+  const [contacts, setContacts] = useState<{ id: string; pattern: string }[]>(
+    []
+  );
+  const [workspaceList, setWorkspaceList] = useState<
+    { id: string; name: string; role: string; inboxOwnerUserId: string }[]
+  >([]);
+  const [ruleName, setRuleName] = useState("Invoice routing");
+  const [subjectHas, setSubjectHas] = useState("invoice");
+  const [folder, setFolder] = useState<"inbox" | "archive" | "spam">("archive");
+  const [ruleLabelId, setRuleLabelId] = useState("");
+
+  const loadAll = useCallback(async () => {
+    const [r, w, c, ws] = await Promise.all([
+      fetch("/api/automation/rules", { credentials: "include" }).then((x) =>
+        x.json().catch(() => ({}))
+      ),
+      fetch("/api/automation/workflows", { credentials: "include" }).then(
+        (x) => x.json().catch(() => ({}))
+      ),
+      fetch("/api/important-contacts", { credentials: "include" }).then(
+        (x) => x.json().catch(() => ({}))
+      ),
+      fetch("/api/workspaces", { credentials: "include" }).then((x) =>
+        x.json().catch(() => ({}))
+      ),
+    ]);
+    setRules((r as { rules?: AutomationRuleRow[] }).rules ?? []);
+    setWorkflows(
+      ((w as { workflows?: { id: string; name: string; enabled: boolean }[] })
+        .workflows ?? []).map((x) => ({
+        id: x.id,
+        name: x.name,
+        enabled: x.enabled,
+      }))
+    );
+    setContacts((c as { contacts?: { id: string; pattern: string }[] }).contacts ?? []);
+    setWorkspaceList(
+      (ws as { workspaces?: typeof workspaceList }).workspaces ?? []
+    );
+  }, []);
+
+  useEffect(() => {
+    void loadAll();
+  }, [loadAll]);
+
+  async function addQuickRule(e: React.FormEvent) {
+    e.preventDefault();
+    const conditions = [
+      {
+        kind: "subject" as const,
+        op: "contains" as const,
+        value: subjectHas.trim(),
+      },
+    ];
+    const actions: unknown[] = [{ type: "move_folder", folder }];
+    if (ruleLabelId) {
+      actions.push({ type: "apply_label", labelId: ruleLabelId });
+    }
+    const res = await fetch("/api/automation/rules", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        name: ruleName.trim(),
+        conditions,
+        actions,
+        sortOrder: 0,
+      }),
+    });
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setErr((j as { error?: string }).error ?? "Could not save rule");
+      return;
+    }
+    showToast("Automation rule saved");
+    await loadAll();
+  }
+
+  async function deleteRule(id: string) {
+    await fetch(`/api/automation/rules/${id}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    showToast("Rule removed");
+    await loadAll();
+  }
+
+  async function addContact(e: React.FormEvent) {
+    e.preventDefault();
+    const fd = new FormData(e.target as HTMLFormElement);
+    const pattern = String(fd.get("pattern") ?? "").trim();
+    if (!pattern) return;
+    const res = await fetch("/api/important-contacts", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ pattern }),
+    });
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setErr((j as { error?: string }).error ?? "Failed");
+      return;
+    }
+    showToast("Important contact added");
+    (e.target as HTMLFormElement).reset();
+    await loadAll();
+  }
+
+  async function removeContact(id: string) {
+    await fetch(`/api/important-contacts/${id}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    showToast("Removed");
+    await loadAll();
+  }
+
+  async function createWorkspace(e: React.FormEvent) {
+    e.preventDefault();
+    const fd = new FormData(e.target as HTMLFormElement);
+    const name = String(fd.get("wsname") ?? "").trim() || "Team inbox";
+    const res = await fetch("/api/workspaces", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ name }),
+    });
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setErr((j as { error?: string }).error ?? "Failed");
+      return;
+    }
+    showToast("Workspace created — add members from the API or a future UI panel.");
+    await loadAll();
+  }
+
+  return (
+    <div className="space-y-6">
+      <Panel
+        title="Email automation rules"
+        description="Rules run on every new inbound message after it is saved. Combine with Block & filters for trash routing."
+      >
+        <form onSubmit={addQuickRule} className="space-y-3 rounded-xl border border-[var(--border)] p-4">
+          <p className="text-sm text-[var(--muted)]">
+            Quick builder: subject contains → move to folder (optional label).
+          </p>
+          <input
+            className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
+            placeholder="Rule name"
+            value={ruleName}
+            onChange={(e) => setRuleName(e.target.value)}
+          />
+          <input
+            className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
+            placeholder="Subject contains (e.g. invoice)"
+            value={subjectHas}
+            onChange={(e) => setSubjectHas(e.target.value)}
+          />
+          <div className="flex flex-wrap gap-3">
+            <select
+              className="rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
+              value={folder}
+              onChange={(e) => setFolder(e.target.value as typeof folder)}
+            >
+              <option value="inbox">Move to Inbox</option>
+              <option value="archive">Move to Archive</option>
+              <option value="spam">Move to Spam</option>
+            </select>
+            <select
+              className="rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
+              value={ruleLabelId}
+              onChange={(e) => setRuleLabelId(e.target.value)}
+            >
+              <option value="">No label</option>
+              {labels.map((l) => (
+                <option key={l.id} value={l.id}>
+                  {l.name}
+                </option>
+              ))}
+            </select>
+            <button
+              type="submit"
+              className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white"
+            >
+              Add rule
+            </button>
+          </div>
+        </form>
+        <ul className="divide-y divide-[var(--border)] rounded-xl border border-[var(--border)]">
+          {rules.length === 0 && (
+            <li className="p-4 text-sm text-[var(--muted)]">No automation rules yet.</li>
+          )}
+          {rules.map((r) => (
+            <li key={r.id} className="flex flex-wrap items-center gap-2 p-4 text-sm">
+              <span className="font-medium">{r.name || "Untitled"}</span>
+              <span className="text-[var(--muted)]">
+                {r.enabled ? "on" : "off"}
+              </span>
+              <button
+                type="button"
+                className="ml-auto text-red-600"
+                onClick={() => void deleteRule(r.id)}
+              >
+                Delete
+              </button>
+            </li>
+          ))}
+        </ul>
+        <p className="text-xs text-[var(--muted)]">
+          Advanced JSON rules/workflows are available via{" "}
+          <code className="rounded bg-[var(--muted)]/10 px-1">/api/automation/rules</code> and{" "}
+          <code className="rounded bg-[var(--muted)]/10 px-1">/api/automation/workflows</code>.
+          Export mail as CSV from{" "}
+          <code className="rounded bg-[var(--muted)]/10 px-1">/api/export/messages</code>.
+        </p>
+      </Panel>
+
+      <Panel
+        title="Workflows"
+        description="Multi-step chains (trigger + ordered actions) run after single-step rules."
+      >
+        <ul className="rounded-xl border border-[var(--border)]">
+          {workflows.length === 0 && (
+            <li className="p-4 text-sm text-[var(--muted)]">No workflows yet — use the API to define triggers and steps.</li>
+          )}
+          {workflows.map((w) => (
+            <li key={w.id} className="border-b border-[var(--border)] p-4 text-sm last:border-0">
+              {w.name || "Untitled"} · {w.enabled ? "enabled" : "disabled"}
+            </li>
+          ))}
+        </ul>
+      </Panel>
+
+      <Panel title="Important contacts" description="Used by important-contact automation conditions.">
+        <form onSubmit={addContact} className="flex flex-wrap gap-2">
+          <input
+            name="pattern"
+            className="min-w-[200px] flex-1 rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
+            placeholder="email or @domain"
+          />
+          <button
+            type="submit"
+            className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-medium"
+          >
+            Add
+          </button>
+        </form>
+        <ul className="mt-3 space-y-1 text-sm">
+          {contacts.map((c) => (
+            <li key={c.id} className="flex justify-between gap-2">
+              <code>{c.pattern}</code>
+              <button type="button" className="text-red-600" onClick={() => void removeContact(c.id)}>
+                Remove
+              </button>
+            </li>
+          ))}
+        </ul>
+      </Panel>
+
+      <Panel
+        title="Team workspaces"
+        description="Create a workspace to share your inbox with admins, members, or viewers. Use inboxOwnerId query param on mail APIs when opening a shared mailbox."
+      >
+        <form onSubmit={createWorkspace} className="flex flex-wrap gap-2">
+          <input
+            name="wsname"
+            className="min-w-[200px] flex-1 rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
+            placeholder="Workspace name"
+          />
+          <button type="submit" className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white">
+            Create
+          </button>
+        </form>
+        <ul className="mt-3 space-y-2 text-sm">
+          {workspaceList.map((w) => (
+            <li key={w.id} className="rounded-lg border border-[var(--border)] px-3 py-2">
+              <span className="font-medium">{w.name}</span> · role: {w.role}
+              <div className="text-xs text-[var(--muted)]">Inbox owner ID: {w.inboxOwnerUserId}</div>
+            </li>
+          ))}
+        </ul>
+      </Panel>
+    </div>
   );
 }
 

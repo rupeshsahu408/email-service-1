@@ -34,7 +34,18 @@ export async function ensureMessagesOptionalColumns(): Promise<void> {
           ADD COLUMN IF NOT EXISTS sent_anonymously boolean DEFAULT false NOT NULL,
           ADD COLUMN IF NOT EXISTS trash_moved_at TIMESTAMPTZ,
           ADD COLUMN IF NOT EXISTS trash_delete_after_at TIMESTAMPTZ,
-          ADD COLUMN IF NOT EXISTS spam_score integer DEFAULT 0 NOT NULL
+          ADD COLUMN IF NOT EXISTS spam_score integer DEFAULT 0 NOT NULL,
+          ADD COLUMN IF NOT EXISTS priority varchar(16) DEFAULT 'normal' NOT NULL,
+          ADD COLUMN IF NOT EXISTS assigned_to_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
+          ADD COLUMN IF NOT EXISTS resolved_at TIMESTAMPTZ
+      `;
+      await sql`
+        CREATE INDEX IF NOT EXISTS messages_assigned_idx
+        ON messages (assigned_to_user_id)
+      `;
+      await sql`
+        CREATE INDEX IF NOT EXISTS messages_resolved_idx
+        ON messages (resolved_at)
       `;
       await sql`
         CREATE INDEX IF NOT EXISTS messages_trash_expiry_idx

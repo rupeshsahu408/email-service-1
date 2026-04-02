@@ -22,6 +22,11 @@ import {
   getTrashLifecyclePatch,
 } from "@/lib/trash-lifecycle";
 import { isPostgresUndefinedColumnError } from "@/lib/pg-error";
+import {
+  tryResolveMailboxAccess,
+  canReadInbox,
+  canMutateInbox,
+} from "@/lib/workspace-access";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +36,7 @@ const MAX_PAGE = 500;
 const MAX_OFFSET = 20_000;
 const bulkDeleteSchema = z.object({
   ids: z.array(z.string().uuid()).min(1).max(500),
+  inboxOwnerId: z.string().uuid().optional(),
 });
 
 function sanitizeSearchTerm(q: string): string {
@@ -41,6 +47,11 @@ function parseOptionalIsoDate(raw: string | null): Date | null {
   if (!raw || raw.length > 40) return null;
   const d = new Date(raw);
   return Number.isFinite(d.getTime()) ? d : null;
+}
+
+function parseInboxOwnerId(sp: URLSearchParams): string | null {
+  const raw = sp.get("inboxOwnerId");
+  return raw && /^[0-9a-f-]{36}$/i.test(raw) ? raw : null;
 }
 
 function parseListPaging(sp: URLSearchParams): { limit: number; offset: number } {
@@ -62,6 +73,11 @@ export async function GET(request: NextRequest) {
   }
 
   const sp = request.nextUrl.searchParams;
+  const access = await tryResolveMailboxAccess(user.id, parseInboxOwnerId(sp));
+  if (!access || !canReadInbox(access)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+  const mailboxUserId = access.inboxOwnerUserId;
   const folderParam = sp.get("folder") ?? "inbox";
   const starredOnly = sp.get("starred") === "1";
   const labelIdRaw = sp.get("labelId");
@@ -73,7 +89,7 @@ export async function GET(request: NextRequest) {
   const db = getDb();
   if (folderParam === "trash") {
     try {
-      await deleteExpiredTrashMessages(db, user.id);
+      await deleteExpiredTrashMessages(db, mailboxUserId);
     } catch (e) {
       if (!isPostgresUndefinedColumnError(e)) throw e;
     }
@@ -93,7 +109,7 @@ export async function GET(request: NextRequest) {
     desc(messages.createdAt),
   ];
 
-  const baseConds = [eq(messages.userId, user.id)];
+  const baseConds = [eq(messages.userId, mailboxUserId)];
 
   if (folderParam === "starred") {
     baseConds.push(eq(messages.starred, true));
@@ -146,6 +162,9 @@ export async function GET(request: NextRequest) {
     hasAttachment: messages.hasAttachment,
     sentAnonymously: messages.sentAnonymously,
     spamScore: messages.spamScore,
+    priority: messages.priority,
+    assignedToUserId: messages.assignedToUserId,
+    resolvedAt: messages.resolvedAt,
   };
   const selectShapeWithTrash = {
     ...selectShape,
@@ -248,6 +267,15 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
 
+  const access = await tryResolveMailboxAccess(
+    user.id,
+    parsed.data.inboxOwnerId ?? null
+  );
+  if (!access || !canMutateInbox(access)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+  const mailboxUserId = access.inboxOwnerUserId;
+
   const ids = [...new Set(parsed.data.ids)];
   const db = getDb();
 
@@ -255,7 +283,7 @@ export async function DELETE(request: NextRequest) {
     const ownedRows = await db
       .select({ id: messages.id, folder: messages.folder })
       .from(messages)
-      .where(and(eq(messages.userId, user.id), inArray(messages.id, ids)));
+      .where(and(eq(messages.userId, mailboxUserId), inArray(messages.id, ids)));
 
     if (ownedRows.length === 0) {
       return NextResponse.json({ ok: true, movedToTrashIds: [], deletedIds: [] });
@@ -268,7 +296,9 @@ export async function DELETE(request: NextRequest) {
       await db
         .update(messages)
         .set(getTrashLifecyclePatch())
-        .where(and(eq(messages.userId, user.id), inArray(messages.id, moveToTrashIds)));
+        .where(
+          and(eq(messages.userId, mailboxUserId), inArray(messages.id, moveToTrashIds))
+        );
     }
 
     return NextResponse.json({

@@ -709,6 +709,12 @@ export const messages = pgTable(
     trashDeleteAfterAt: timestamp("trash_delete_after_at", { withTimezone: true }),
     /** Heuristic / manual spam score (inbound classification; 5+ typically means spam folder). */
     spamScore: integer("spam_score").notNull().default(0),
+    /** normal | high | low — automation / UX priority. */
+    priority: varchar("priority", { length: 16 }).notNull().default("normal"),
+    assignedToUserId: uuid("assigned_to_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
   },
   (t) => [
     index("messages_user_folder_created_idx").on(
@@ -721,6 +727,8 @@ export const messages = pgTable(
     index("messages_user_pinned_idx").on(t.userId, t.pinned, t.pinnedAt),
     index("messages_trash_expiry_idx").on(t.folder, t.trashDeleteAfterAt),
     uniqueIndex("messages_provider_msg_unique").on(t.userId, t.providerMessageId),
+    index("messages_assigned_idx").on(t.assignedToUserId),
+    index("messages_resolved_idx").on(t.resolvedAt),
   ]
 );
 
@@ -1020,6 +1028,235 @@ export const confidentialMessages = pgTable(
     uniqueIndex("confidential_messages_token_hash_unique").on(t.tokenHash),
     index("confidential_messages_owner_idx").on(t.ownerUserId, t.createdAt),
     index("confidential_messages_expires_idx").on(t.expiresAt),
+  ]
+);
+
+export const importantContacts = pgTable(
+  "important_contacts",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    pattern: varchar("pattern", { length: 320 }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    uniqueIndex("important_contacts_user_pattern_unique").on(t.userId, t.pattern),
+    index("important_contacts_user_idx").on(t.userId),
+  ]
+);
+
+/** JSON automation conditions / actions — see `src/lib/email-automation.ts`. */
+export type AutomationConditionJson =
+  | { kind: "from"; op: "equals" | "contains" | "domain"; value: string }
+  | { kind: "subject"; op: "contains"; value: string }
+  | { kind: "body"; op: "contains"; value: string }
+  | { kind: "sender_unknown" }
+  | { kind: "important_contact" };
+
+export type AutomationActionJson =
+  | { type: "move_folder"; folder: MessageFolder }
+  | { type: "apply_label"; labelId: string }
+  | { type: "mark_spam" }
+  | { type: "set_priority"; priority: "high" | "normal" | "low" }
+  | { type: "forward"; to: string }
+  | { type: "mark_read"; read: boolean }
+  | { type: "star"; starred: boolean };
+
+export const emailAutomationRules = pgTable(
+  "email_automation_rules",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: varchar("name", { length: 128 }).notNull().default(""),
+    enabled: boolean("enabled").notNull().default(true),
+    sortOrder: integer("sort_order").notNull().default(0),
+    conditions: jsonb("conditions")
+      .$type<AutomationConditionJson[]>()
+      .notNull(),
+    actions: jsonb("actions").$type<AutomationActionJson[]>().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    index("email_automation_rules_user_enabled_idx").on(
+      t.userId,
+      t.enabled,
+      t.sortOrder
+    ),
+  ]
+);
+
+export const automationWorkflows = pgTable(
+  "automation_workflows",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: varchar("name", { length: 128 }).notNull().default(""),
+    enabled: boolean("enabled").notNull().default(true),
+    triggerConditions: jsonb("trigger_conditions")
+      .$type<AutomationConditionJson[]>()
+      .notNull(),
+    steps: jsonb("steps").$type<AutomationActionJson[]>().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    index("automation_workflows_user_enabled_idx").on(t.userId, t.enabled),
+  ]
+);
+
+export const workspaceRoleEnum = ["admin", "member", "viewer"] as const;
+export type WorkspaceRole = (typeof workspaceRoleEnum)[number];
+
+export const workspaces = pgTable(
+  "workspaces",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    name: varchar("name", { length: 128 }).notNull().default(""),
+    inboxOwnerUserId: uuid("inbox_owner_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [index("workspaces_inbox_owner_idx").on(t.inboxOwnerUserId)]
+);
+
+export const workspaceMembers = pgTable(
+  "workspace_members",
+  {
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    role: varchar("role", { length: 16 }).notNull().$type<WorkspaceRole>(),
+    joinedAt: timestamp("joined_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.workspaceId, t.userId] }),
+    index("workspace_members_user_idx").on(t.userId),
+  ]
+);
+
+export const scheduledReminderStatusEnum = [
+  "pending",
+  "completed",
+  "cancelled",
+] as const;
+export type ScheduledReminderStatus =
+  (typeof scheduledReminderStatusEnum)[number];
+
+export const scheduledReminders = pgTable(
+  "scheduled_reminders",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    messageId: uuid("message_id").references(() => messages.id, {
+      onDelete: "cascade",
+    }),
+    kind: varchar("kind", { length: 24 }).notNull(),
+    note: text("note").notNull().default(""),
+    remindAt: timestamp("remind_at", { withTimezone: true }).notNull(),
+    status: varchar("status", { length: 16 })
+      .notNull()
+      .default("pending")
+      .$type<ScheduledReminderStatus>(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    index("scheduled_reminders_user_status_idx").on(
+      t.userId,
+      t.status,
+      t.remindAt
+    ),
+    index("scheduled_reminders_due_idx").on(t.status, t.remindAt),
+  ]
+);
+
+export const userNotifications = pgTable(
+  "user_notifications",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    type: varchar("type", { length: 32 }).notNull(),
+    title: varchar("title", { length: 256 }).notNull().default(""),
+    body: text("body").notNull().default(""),
+    readAt: timestamp("read_at", { withTimezone: true }),
+    meta: jsonb("meta").$type<Record<string, unknown>>(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    index("user_notifications_user_created_idx").on(t.userId, t.createdAt),
+    index("user_notifications_user_unread_idx").on(t.userId, t.readAt),
+  ]
+);
+
+export const userAuditLogs = pgTable(
+  "user_audit_logs",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    action: varchar("action", { length: 64 }).notNull(),
+    resourceType: varchar("resource_type", { length: 64 }).notNull().default(""),
+    resourceId: varchar("resource_id", { length: 128 }).notNull().default(""),
+    detail: text("detail"),
+    meta: jsonb("meta").$type<Record<string, unknown>>(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [index("user_audit_logs_user_created_idx").on(t.userId, t.createdAt)]
+);
+
+export const userApiAccessTokens = pgTable(
+  "user_api_access_tokens",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    tokenHash: varchar("token_hash", { length: 64 }).notNull(),
+    label: varchar("label", { length: 128 }).notNull().default(""),
+    scopes: jsonb("scopes").$type<string[]>(),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    uniqueIndex("user_api_access_tokens_hash_unique").on(t.tokenHash),
+    index("user_api_access_tokens_user_idx").on(t.userId),
   ]
 );
 

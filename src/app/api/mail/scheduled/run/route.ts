@@ -9,6 +9,7 @@ import {
   messages,
   scheduledEmailAttachments,
   scheduledEmails,
+  scheduledReminders,
   users,
 } from "@/db/schema";
 import {
@@ -36,6 +37,7 @@ import {
 import { convertInlineDataUrlsToCid } from "@/lib/inline-dataurl-to-cid";
 import { rateLimitSend } from "@/lib/rate-limit";
 import { logError, logInfo } from "@/lib/logger";
+import { createUserNotification } from "@/lib/app-notifications";
 
 export const runtime = "nodejs";
 
@@ -401,8 +403,47 @@ export async function POST(request: NextRequest) {
     .limit(10);
   logInfo("mail_scheduled_run_due_jobs", { dueJobs: dueJobs.length });
 
+  let remindersFired = 0;
+  try {
+    const dueReminders = await getDb()
+      .select()
+      .from(scheduledReminders)
+      .where(
+        and(
+          eq(scheduledReminders.status, "pending"),
+          lte(scheduledReminders.remindAt, now)
+        )
+      )
+      .limit(50);
+    for (const r of dueReminders) {
+      try {
+        await createUserNotification({
+          userId: r.userId,
+          type: "follow_up_reminder",
+          title: "Scheduled reminder",
+          body: r.note || "Follow-up",
+          meta: { reminderId: r.id, messageId: r.messageId },
+        });
+        await getDb()
+          .update(scheduledReminders)
+          .set({ status: "completed" })
+          .where(eq(scheduledReminders.id, r.id));
+        remindersFired++;
+      } catch (e) {
+        logError("reminder_job_failed", {
+          reminderId: r.id,
+          message: e instanceof Error ? e.message : String(e),
+        });
+      }
+    }
+  } catch (e) {
+    logError("reminders_fetch_failed", {
+      message: e instanceof Error ? e.message : String(e),
+    });
+  }
+
   if (dueJobs.length === 0) {
-    return NextResponse.json({ ok: true, processed: 0 });
+    return NextResponse.json({ ok: true, processed: 0, remindersFired });
   }
 
   let processed = 0;
@@ -416,6 +457,6 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, processed });
+  return NextResponse.json({ ok: true, processed, remindersFired });
 }
 

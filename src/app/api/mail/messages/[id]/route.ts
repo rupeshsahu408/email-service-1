@@ -20,6 +20,12 @@ import {
 import { ensureUserSettingsRow } from "@/lib/user-settings";
 import { isPostgresUndefinedColumnError } from "@/lib/pg-error";
 import { upsertSenderMailPreference } from "@/lib/sender-mail-preference";
+import {
+  tryResolveMailboxAccess,
+  canReadInbox,
+  canMutateInbox,
+  isUserAssignableInWorkspace,
+} from "@/lib/workspace-access";
 
 export const dynamic = "force-dynamic";
 
@@ -29,10 +35,18 @@ const patchSchema = z.object({
   starred: z.boolean().optional(),
   pinned: z.boolean().optional(),
   labelIds: z.array(z.string().uuid()).optional(),
+  priority: z.enum(["high", "normal", "low"]).optional(),
+  assignedToUserId: z.string().uuid().nullable().optional(),
+  resolved: z.boolean().optional(),
 });
 
+function parseInboxOwnerParam(sp: URLSearchParams): string | null {
+  const raw = sp.get("inboxOwnerId");
+  return raw && /^[0-9a-f-]{36}$/i.test(raw) ? raw : null;
+}
+
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   const user = await getCurrentUser();
@@ -40,6 +54,14 @@ export async function GET(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { id } = await context.params;
+  const access = await tryResolveMailboxAccess(
+    user.id,
+    parseInboxOwnerParam(request.nextUrl.searchParams)
+  );
+  if (!access || !canReadInbox(access)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+  const mailboxUserId = access.inboxOwnerUserId;
   const canReadAuthCols = await hasMessageAuthColumns();
   const db = getDb();
   const legacyShape = {
@@ -76,7 +98,7 @@ export async function GET(
     db
       .select(includeTrashColumns ? legacyShapeWithTrash : legacyShape)
       .from(messages)
-      .where(and(eq(messages.id, id), eq(messages.userId, user.id)))
+      .where(and(eq(messages.id, id), eq(messages.userId, mailboxUserId)))
       .limit(1)
       .then((rs) =>
         rs.map((r) => ({
@@ -92,7 +114,7 @@ export async function GET(
       rows = await db
         .select()
         .from(messages)
-        .where(and(eq(messages.id, id), eq(messages.userId, user.id)))
+        .where(and(eq(messages.id, id), eq(messages.userId, mailboxUserId)))
         .limit(1);
     } catch (queryErr) {
       if (!isPostgresUndefinedColumnError(queryErr)) throw queryErr;
@@ -160,6 +182,15 @@ export async function PATCH(
     return NextResponse.json({ error: "Invalid input" }, { status: 400 });
   }
 
+  const access = await tryResolveMailboxAccess(
+    user.id,
+    parseInboxOwnerParam(request.nextUrl.searchParams)
+  );
+  if (!access || !canMutateInbox(access)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+  const mailboxUserId = access.inboxOwnerUserId;
+
   const db = getDb();
   let row: {
     id: string;
@@ -176,7 +207,7 @@ export async function PATCH(
         spamScore: messages.spamScore,
       })
       .from(messages)
-      .where(and(eq(messages.id, id), eq(messages.userId, user.id)))
+      .where(and(eq(messages.id, id), eq(messages.userId, mailboxUserId)))
       .limit(1);
     if (existing.length === 0) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -191,7 +222,7 @@ export async function PATCH(
         fromAddr: messages.fromAddr,
       })
       .from(messages)
-      .where(and(eq(messages.id, id), eq(messages.userId, user.id)))
+      .where(and(eq(messages.id, id), eq(messages.userId, mailboxUserId)))
       .limit(1);
     if (fallback.length === 0) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -208,6 +239,9 @@ export async function PATCH(
     trashMovedAt: Date | null;
     trashDeleteAfterAt: Date | null;
     spamScore: number;
+    priority: string;
+    assignedToUserId: string | null;
+    resolvedAt: Date | null;
   }> = {};
   let trainSenderSpam = false;
   let trainSenderTrust = false;
@@ -242,13 +276,33 @@ export async function PATCH(
     updates.pinned = parsed.data.pinned;
     updates.pinnedAt = parsed.data.pinned ? new Date() : null;
   }
+  if (parsed.data.priority !== undefined) {
+    updates.priority = parsed.data.priority;
+  }
+  if (parsed.data.assignedToUserId !== undefined) {
+    const v = parsed.data.assignedToUserId;
+    if (v === null) {
+      updates.assignedToUserId = null;
+    } else {
+      const ok =
+        v === mailboxUserId ||
+        (await isUserAssignableInWorkspace(mailboxUserId, v));
+      if (!ok) {
+        return NextResponse.json({ error: "Invalid assignee" }, { status: 400 });
+      }
+      updates.assignedToUserId = v;
+    }
+  }
+  if (parsed.data.resolved !== undefined) {
+    updates.resolvedAt = parsed.data.resolved ? new Date() : null;
+  }
 
   if (Object.keys(updates).length > 0) {
     try {
       await db
         .update(messages)
         .set(updates)
-        .where(and(eq(messages.id, id), eq(messages.userId, user.id)));
+        .where(and(eq(messages.id, id), eq(messages.userId, mailboxUserId)));
     } catch (e) {
       if (!isPostgresUndefinedColumnError(e)) throw e;
       const { spamScore: _s, ...rest } = updates;
@@ -256,7 +310,7 @@ export async function PATCH(
         await db
           .update(messages)
           .set(rest)
-          .where(and(eq(messages.id, id), eq(messages.userId, user.id)));
+          .where(and(eq(messages.id, id), eq(messages.userId, mailboxUserId)));
       }
     }
   }
@@ -264,7 +318,7 @@ export async function PATCH(
   if (trainSenderSpam) {
     try {
       await upsertSenderMailPreference({
-        userId: user.id,
+        userId: mailboxUserId,
         fromAddr: row.fromAddr,
         preference: "spam",
       });
@@ -275,7 +329,7 @@ export async function PATCH(
   if (trainSenderTrust) {
     try {
       await upsertSenderMailPreference({
-        userId: user.id,
+        userId: mailboxUserId,
         fromAddr: row.fromAddr,
         preference: "trust",
       });
@@ -290,7 +344,7 @@ export async function PATCH(
       const allowedRows = await db
         .select({ id: labels.id })
         .from(labels)
-        .where(and(eq(labels.userId, user.id), inArray(labels.id, labelIds)));
+        .where(and(eq(labels.userId, mailboxUserId), inArray(labels.id, labelIds)));
       if (allowedRows.length !== labelIds.length) {
         return NextResponse.json({ error: "Invalid label" }, { status: 400 });
       }
@@ -307,7 +361,7 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   const user = await getCurrentUser();
@@ -316,10 +370,19 @@ export async function DELETE(
   }
   const { id } = await context.params;
 
+  const access = await tryResolveMailboxAccess(
+    user.id,
+    parseInboxOwnerParam(request.nextUrl.searchParams)
+  );
+  if (!access || !canMutateInbox(access)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+  const mailboxUserId = access.inboxOwnerUserId;
+
   const existing = await getDb()
     .select({ folder: messages.folder })
     .from(messages)
-    .where(and(eq(messages.id, id), eq(messages.userId, user.id)))
+    .where(and(eq(messages.id, id), eq(messages.userId, mailboxUserId)))
     .limit(1);
   if (existing.length === 0) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -329,7 +392,7 @@ export async function DELETE(
     await getDb()
       .update(messages)
       .set(getTrashLifecyclePatch())
-      .where(and(eq(messages.id, id), eq(messages.userId, user.id)));
+      .where(and(eq(messages.id, id), eq(messages.userId, mailboxUserId)));
   }
 
   return NextResponse.json({ ok: true });

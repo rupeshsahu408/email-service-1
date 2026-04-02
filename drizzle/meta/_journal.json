@@ -71,6 +71,13 @@
       "when": 1775200000000,
       "tag": "0016_spam_folder_and_detection",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1775300000000,
+      "tag": "0017_phase6_automation_teams",
+      "breakpoints": true
     }
   ]
 }

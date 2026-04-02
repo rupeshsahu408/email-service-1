@@ -35,6 +35,8 @@ import {
   mailboxMessageContentBytesExpr,
 } from "@/lib/storage-quota";
 import { getAdminSystemSettings } from "@/lib/admin-system-settings";
+import { runInboundAutomation } from "@/lib/email-automation";
+import { createUserNotification } from "@/lib/app-notifications";
 
 export const runtime = "nodejs";
 
@@ -393,7 +395,7 @@ export async function POST(request: NextRequest) {
       logInfo("resend_webhook_ingesting", { userId, targetFolder, threadId });
 
       try {
-        const { id: messageIdRow, created } = await ingestInboundMessage({
+        const { id: messageIdRow, created, tempInbox } = await ingestInboundMessage({
           providerMessageId: messageIdForDedup,
           userId,
           subject,
@@ -412,6 +414,24 @@ export async function POST(request: NextRequest) {
         });
 
         logInfo("resend_webhook_ingested", { userId, messageIdRow, created });
+
+        if (created && !tempInbox) {
+          void createUserNotification({
+            userId,
+            type: "new_email",
+            title: "New email",
+            body: subject.slice(0, 240),
+            meta: { messageId: messageIdRow },
+          });
+          void runInboundAutomation({
+            ownerUserId: userId,
+            messageId: messageIdRow,
+            fromAddr,
+            subject,
+            bodyText: userBodyText,
+            bodyHtml: userHtml,
+          });
+        }
 
         if (created && inboundResolved.applyLabelId) {
           try {
