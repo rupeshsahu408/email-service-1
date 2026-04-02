@@ -353,15 +353,38 @@ export async function POST(request: NextRequest) {
       const threadId = await resolveInboundThreadId(userId, inReplyTo);
       const disposition = await getInboundDisposition(userId, fromAddr);
       const attNames = attachmentBuffers.map((a) => a.filename);
-      const inboundResolved = await resolveExternalInboundFolder({
-        userId,
-        fromAddr,
-        subject,
-        bodyText: userBodyText,
-        bodyHtml: userHtml,
-        attachmentFilenames: attNames,
-        disposition,
-      });
+
+      // Spam scoring must never block mail ingestion.
+      let inboundResolved: Awaited<
+        ReturnType<typeof resolveExternalInboundFolder>
+      >;
+      try {
+        inboundResolved = await resolveExternalInboundFolder({
+          userId,
+          fromAddr,
+          subject,
+          bodyText: userBodyText,
+          bodyHtml: userHtml,
+          attachmentFilenames: attNames,
+          disposition,
+        });
+      } catch (spamErr) {
+        logError("spam_inbound_scoring_failed", {
+          message:
+            spamErr instanceof Error ? spamErr.message : "unknown",
+          userId,
+          fromAddr,
+          subject: subject?.slice(0, 120) ?? "",
+        });
+        inboundResolved = {
+          folder: disposition.kind === "trash" ? "trash" : "inbox",
+          spamScore: 0,
+          spamReasons: [],
+          applyLabelId:
+            disposition.kind === "label" ? disposition.labelId : null,
+        };
+      }
+
       const targetFolder = inboundResolved.folder;
 
       const persistInboundAttachments =
