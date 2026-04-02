@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import Link from "next/link";
 import { Turnstile } from "@marsidev/react-turnstile";
 import type { PublicKeyCredentialCreationOptionsJSON } from "@simplewebauthn/browser";
+import { SendoraBrandIntro } from "@/components/brand/sendora-brand-intro";
 
 const steps = ["Username", "Verify", "Password", "Backup file", "Passkey"] as const;
 
@@ -42,6 +43,7 @@ export function SignupWizard() {
   const [copied, setCopied] = useState(false);
   const [downloaded, setDownloaded] = useState(false);
   const [passkeyBusy, setPasskeyBusy] = useState(false);
+  const [brandIntroUrl, setBrandIntroUrl] = useState<string | null>(null);
 
   const isDev = process.env.NODE_ENV === "development";
   const siteKey = isDev ? "" : (process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "");
@@ -133,7 +135,7 @@ export function SignupWizard() {
   };
 
   const skipPasskey = () => {
-    window.location.assign("/inbox");
+    setBrandIntroUrl("/inbox");
   };
 
   const setupPasskey = async () => {
@@ -171,7 +173,7 @@ export function SignupWizard() {
         setFormError(verifyJson?.error ?? "Passkey setup failed.");
         return;
       }
-      window.location.assign("/inbox");
+      setBrandIntroUrl("/inbox");
     } catch (err) {
       setFormError(
         passkeyFriendlyError(
@@ -185,6 +187,14 @@ export function SignupWizard() {
   };
 
   return (
+    <>
+    {brandIntroUrl ? (
+      <SendoraBrandIntro
+        onComplete={() => {
+          window.location.assign(brandIntroUrl);
+        }}
+      />
+    ) : null}
     <div className="min-h-screen bg-[#f3f0fd] flex flex-col">
       {/* Header */}
       <header className="px-6 py-4">
@@ -471,5 +481,6 @@ export function SignupWizard() {
         </div>
       </div>
     </div>
+    </>
   );
 }

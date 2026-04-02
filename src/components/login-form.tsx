@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { startAuthentication } from "@simplewebauthn/browser";
 import type { PublicKeyCredentialRequestOptionsJSON } from "@simplewebauthn/browser";
 import { safeRelativeRedirectPath } from "@/lib/safe-redirect";
+import { SendoraBrandIntro } from "@/components/brand/sendora-brand-intro";
 
 async function readJsonResponse<T>(res: Response): Promise<T | null> {
   const text = await res.text();
@@ -49,6 +50,7 @@ export function LoginForm({ nextParam }: { nextParam?: string }) {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [passkeyLoading, setPasskeyLoading] = useState(false);
+  const [brandIntroUrl, setBrandIntroUrl] = useState<string | null>(null);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -67,7 +69,7 @@ export function LoginForm({ nextParam }: { nextParam?: string }) {
         return;
       }
       if (!res.ok) { setError(data.error ?? "Login failed."); return; }
-      window.location.assign(postLoginTarget(data.redirectTo, nextSafe));
+      setBrandIntroUrl(postLoginTarget(data.redirectTo, nextSafe));
     } catch {
       setError("Network error. Check your connection and try again.");
     } finally {
@@ -111,9 +113,7 @@ export function LoginForm({ nextParam }: { nextParam?: string }) {
         setError(verifyJson?.error ?? "Passkey login failed.");
         return;
       }
-      window.location.assign(
-        postLoginTarget(verifyJson?.redirectTo, nextSafe)
-      );
+      setBrandIntroUrl(postLoginTarget(verifyJson?.redirectTo, nextSafe));
     } catch (err) {
       setError(
         passkeyFriendlyError(
@@ -127,6 +127,14 @@ export function LoginForm({ nextParam }: { nextParam?: string }) {
   }
 
   return (
+    <>
+    {brandIntroUrl ? (
+      <SendoraBrandIntro
+        onComplete={() => {
+          window.location.assign(brandIntroUrl);
+        }}
+      />
+    ) : null}
     <div className="min-h-screen bg-[#f3f0fd] flex flex-col">
       {/* Header */}
       <header className="px-6 py-4">
@@ -257,5 +265,6 @@ export function LoginForm({ nextParam }: { nextParam?: string }) {
         </div>
       </div>
     </div>
+    </>
   );
 }
