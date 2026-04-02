@@ -1,6 +1,7 @@
 import { and, asc, count, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import { messages, type MessageFolder } from "@/db/schema";
+import { computePhase3Analytics, type Phase3Payload } from "@/lib/analytics-phase3";
 import { formatUserEmail } from "@/lib/constants";
 import { parsePrimaryEmail } from "@/lib/mail-filter";
 
@@ -305,6 +306,7 @@ export type UserAnalyticsPayload = {
     }>;
   };
   phase2ComputedAt: string;
+  phase3: Phase3Payload;
 };
 
 export async function getUserAnalytics(
@@ -334,6 +336,7 @@ export async function getUserAnalytics(
     incomingByFrom,
     outgoingByTo,
     phase2,
+    phase3,
   ] = await Promise.all([
     db
       .select({ n: count() })
@@ -382,6 +385,7 @@ export async function getUserAnalytics(
       .where(and(baseTime, eq(messages.folder, "sent")))
       .groupBy(messages.toAddr),
     computePhase2Block(userId, start, end, now),
+    computePhase3Analytics(userId, selfEmail, start, end),
   ]);
 
   const recvMap = new Map<string, number>();
@@ -450,5 +454,6 @@ export async function getUserAnalytics(
     productivity: phase2.productivity,
     actionInsights: phase2.actionInsights,
     phase2ComputedAt: phase2.phase2ComputedAt,
+    phase3,
   };
 }

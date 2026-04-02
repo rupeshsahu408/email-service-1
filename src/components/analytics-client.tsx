@@ -45,6 +45,32 @@ type AnalyticsApiResponse = {
     }>;
   };
   phase2ComputedAt: string;
+  phase3: {
+    contactIntelligence: {
+      topContacts: Array<{
+        email: string;
+        interactionCount: number;
+        receivedInRange: number;
+        sentInRange: number;
+        relationshipScore: "strong" | "medium" | "low";
+      }>;
+      newContactsCount: number;
+      inactiveContactsCount: number;
+      mostActiveSender: { email: string; messageCount: number } | null;
+      mostActiveRecipient: { email: string; messageCount: number } | null;
+    };
+    categories: {
+      business: number;
+      personal: number;
+      finance: number;
+      spam: number;
+      total: number;
+      topCategory: "business" | "personal" | "finance" | "spam" | null;
+      topCategoryPercentage: number | null;
+      insightLine: string;
+    };
+    phase3ComputedAt: string;
+  };
 };
 
 const RANGE_OPTIONS: { value: AnalyticsRange; label: string }[] = [
@@ -126,6 +152,82 @@ function formatDurationMs(ms: number | null): string {
     return rh > 0 ? `${d}d ${rh}h` : `${d}d`;
   }
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
+}
+
+function RelationshipBadge({
+  score,
+}: {
+  score: "strong" | "medium" | "low";
+}) {
+  const styles = {
+    strong: "bg-emerald-100 text-emerald-900 border-emerald-200",
+    medium: "bg-amber-100 text-amber-950 border-amber-200",
+    low: "bg-slate-100 text-slate-700 border-slate-200",
+  } as const;
+  const labels = { strong: "Strong", medium: "Medium", low: "Low" } as const;
+  return (
+    <span
+      className={`inline-flex rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${styles[score]}`}
+    >
+      {labels[score]}
+    </span>
+  );
+}
+
+function CategoryDonut({
+  categories,
+}: {
+  categories: AnalyticsApiResponse["phase3"]["categories"];
+}) {
+  const { business, personal, finance, spam, total } = categories;
+  if (total <= 0) {
+    return (
+      <div className="flex h-44 w-44 shrink-0 items-center justify-center rounded-full border border-dashed border-[#e8e4f8] bg-[#faf9fe] text-center text-xs text-[#9896b4] px-4">
+        No messages in range to chart
+      </div>
+    );
+  }
+  const t = total;
+  const degBusiness = (business / t) * 360;
+  const degPersonal = (personal / t) * 360;
+  const degFinance = (finance / t) * 360;
+  const degSpam = (spam / t) * 360;
+  let a = 0;
+  const a1 = a + degBusiness;
+  a = a1;
+  const a2 = a + degPersonal;
+  a = a2;
+  const a3 = a + degFinance;
+  a = a3;
+  const a4 = a + degSpam;
+  const gradient = `conic-gradient(
+    #5b4dff 0deg ${a1}deg,
+    #00a896 ${a1}deg ${a2}deg,
+    #e6a100 ${a2}deg ${a3}deg,
+    #9b87b3 ${a3}deg ${a4}deg
+  )`;
+  return (
+    <div
+      className="relative h-44 w-44 shrink-0"
+      role="img"
+      aria-label={`Email categories: ${business} business, ${personal} personal, ${finance} finance, ${spam} spam`}
+    >
+      <div
+        className="absolute inset-0 rounded-full"
+        style={{ background: gradient }}
+      />
+      <div className="absolute inset-[24%] flex items-center justify-center rounded-full bg-white shadow-inner">
+        <div className="text-center">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-[#9896b4]">
+            Total
+          </p>
+          <p className="text-lg font-bold tabular-nums text-[#1c1b33]">
+            {total.toLocaleString()}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function formatRelativeWaiting(iso: string): string {
@@ -341,6 +443,8 @@ export function AnalyticsClient({ email }: { email: string }) {
               ))}
             </div>
             <div className="h-52 rounded-2xl bg-[#e8e4f8]/45" />
+            <div className="h-64 rounded-2xl bg-[#e8e4f8]/42" />
+            <div className="h-72 rounded-2xl bg-[#e8e4f8]/40" />
             <div className="h-72 rounded-2xl bg-[#e8e4f8]/50" />
             <div className="h-48 rounded-2xl bg-[#e8e4f8]/50" />
           </div>
@@ -550,6 +654,194 @@ export function AnalyticsClient({ email }: { email: string }) {
                   </p>
                 </section>
 
+                <section className="mt-10 rounded-2xl border border-[#e8e4f8] bg-white p-5 shadow-sm sm:p-6">
+                  <h2 className="text-lg font-bold text-[#1c1b33]">
+                    Contact intelligence
+                  </h2>
+                  <p className="mt-0.5 text-sm text-[#65637e]">
+                    Contacts are normalized email addresses from mail you sent
+                    and received (&quot;New&quot; means first seen in this
+                    range; &quot;Inactive&quot; had prior activity but none
+                    here). Relationship scores use two-way volume in this range:
+                    strong = regular back-and-forth, medium = some ongoing
+                    thread, low = light touch.
+                  </p>
+                  <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <SummaryCard
+                      title="New contacts"
+                      value={data.phase3.contactIntelligence.newContactsCount}
+                      hint="First interaction in this range"
+                    />
+                    <SummaryCard
+                      title="Inactive contacts"
+                      value={
+                        data.phase3.contactIntelligence.inactiveContactsCount
+                      }
+                      hint="No activity in range, prior history"
+                    />
+                    <SummaryCardText
+                      title="Most active sender"
+                      value={
+                        data.phase3.contactIntelligence.mostActiveSender
+                          ? data.phase3.contactIntelligence.mostActiveSender
+                              .email
+                          : "—"
+                      }
+                      hint={
+                        data.phase3.contactIntelligence.mostActiveSender
+                          ? `${data.phase3.contactIntelligence.mostActiveSender.messageCount.toLocaleString()} received in range`
+                          : "No incoming in range"
+                      }
+                    />
+                    <SummaryCardText
+                      title="Most active recipient"
+                      value={
+                        data.phase3.contactIntelligence.mostActiveRecipient
+                          ? data.phase3.contactIntelligence.mostActiveRecipient
+                              .email
+                          : "—"
+                      }
+                      hint={
+                        data.phase3.contactIntelligence.mostActiveRecipient
+                          ? `${data.phase3.contactIntelligence.mostActiveRecipient.messageCount.toLocaleString()} sent in range`
+                          : "No outbound in range"
+                      }
+                    />
+                  </div>
+                  {data.phase3.contactIntelligence.topContacts.length === 0 ? (
+                    <p className="mt-6 text-sm text-[#9896b4]">
+                      No contact interactions in this range.
+                    </p>
+                  ) : (
+                    <div className="mt-6 overflow-x-auto rounded-xl border border-[#e8e4f8]">
+                      <table className="w-full min-w-[640px] text-left text-sm">
+                        <thead>
+                          <tr className="border-b border-[#e8e4f8] bg-[#faf9fe] text-[11px] font-semibold uppercase tracking-wider text-[#9896b4]">
+                            <th className="px-3 py-2.5 font-semibold">#</th>
+                            <th className="px-3 py-2.5 font-semibold">
+                              Contact
+                            </th>
+                            <th className="px-3 py-2.5 font-semibold text-right">
+                              In
+                            </th>
+                            <th className="px-3 py-2.5 font-semibold text-right">
+                              Out
+                            </th>
+                            <th className="px-3 py-2.5 font-semibold text-right">
+                              Total
+                            </th>
+                            <th className="px-3 py-2.5 font-semibold">
+                              Relationship
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {data.phase3.contactIntelligence.topContacts.map(
+                            (row, idx) => (
+                              <tr
+                                key={row.email}
+                                className="border-b border-[#f0edfb] last:border-0"
+                              >
+                                <td className="px-3 py-2.5 text-[#9896b4] tabular-nums">
+                                  {idx + 1}
+                                </td>
+                                <td className="max-w-[200px] px-3 py-2.5 font-medium text-[#1c1b33] break-all">
+                                  {row.email}
+                                </td>
+                                <td className="px-3 py-2.5 text-right tabular-nums text-[#65637e]">
+                                  {row.receivedInRange}
+                                </td>
+                                <td className="px-3 py-2.5 text-right tabular-nums text-[#65637e]">
+                                  {row.sentInRange}
+                                </td>
+                                <td className="px-3 py-2.5 text-right font-semibold tabular-nums text-[#1c1b33]">
+                                  {row.interactionCount}
+                                </td>
+                                <td className="px-3 py-2.5">
+                                  <RelationshipBadge
+                                    score={row.relationshipScore}
+                                  />
+                                </td>
+                              </tr>
+                            )
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </section>
+
+                <section className="mt-10 rounded-2xl border border-[#e8e4f8] bg-white p-5 shadow-sm sm:p-6">
+                  <h2 className="text-lg font-bold text-[#1c1b33]">
+                    Category analytics
+                  </h2>
+                  <p className="mt-0.5 text-sm text-[#65637e]">
+                    Rule-based labels from sender context, subject/body keywords,
+                    spam folder, and spam score—ready to swap for AI later.
+                    Default when uncertain is personal.
+                  </p>
+                  <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    <SummaryCard
+                      title="Business"
+                      value={data.phase3.categories.business}
+                    />
+                    <SummaryCard
+                      title="Personal"
+                      value={data.phase3.categories.personal}
+                    />
+                    <SummaryCard
+                      title="Finance"
+                      value={data.phase3.categories.finance}
+                    />
+                    <SummaryCard
+                      title="Spam"
+                      value={data.phase3.categories.spam}
+                    />
+                  </div>
+                  <div className="mt-8 flex flex-col items-center gap-8 sm:flex-row sm:items-center sm:justify-center sm:gap-12">
+                    <CategoryDonut categories={data.phase3.categories} />
+                    <div className="w-full max-w-xs space-y-2 text-sm">
+                      {(
+                        [
+                          ["Business", data.phase3.categories.business, "#5b4dff"],
+                          ["Personal", data.phase3.categories.personal, "#00a896"],
+                          ["Finance", data.phase3.categories.finance, "#e6a100"],
+                          ["Spam", data.phase3.categories.spam, "#9b87b3"],
+                        ] as const
+                      ).map(([label, n, color]) => {
+                        const pct =
+                          data.phase3.categories.total > 0
+                            ? Math.round((1000 * n) / data.phase3.categories.total) /
+                              10
+                            : 0;
+                        return (
+                          <div
+                            key={label}
+                            className="flex items-center justify-between gap-3"
+                          >
+                            <span className="inline-flex items-center gap-2 text-[#65637e]">
+                              <span
+                                className="h-2.5 w-2.5 shrink-0 rounded-sm"
+                                style={{ background: color }}
+                              />
+                              {label}
+                            </span>
+                            <span className="tabular-nums text-[#1c1b33]">
+                              {n.toLocaleString()}{" "}
+                              <span className="text-[#9896b4]">
+                                ({pct}%)
+                              </span>
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <p className="mt-8 rounded-xl border border-[#e8e4f8] bg-[#faf9fe] px-4 py-3 text-sm font-medium text-[#1c1b33]">
+                    {data.phase3.categories.insightLine}
+                  </p>
+                </section>
+
                 <section className="mt-8 rounded-2xl border border-[#e8e4f8] bg-white p-5 shadow-sm sm:p-6">
                   <h2 className="text-lg font-bold text-[#1c1b33]">
                     Activity
@@ -559,70 +851,6 @@ export function AnalyticsClient({ email }: { email: string }) {
                   </p>
                   <div className="mt-6">
                     <ActivityChart series={data.series} />
-                  </div>
-                </section>
-
-                <section className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
-                  <div className="rounded-2xl border border-[#e8e4f8] bg-white p-5 shadow-sm sm:p-6">
-                    <h2 className="text-lg font-bold text-[#1c1b33]">
-                      Top contacts
-                    </h2>
-                    <p className="mt-0.5 text-sm text-[#65637e]">
-                      By total messages with you (sent and received).
-                    </p>
-                    {data.topContacts.length === 0 ? (
-                      <p className="mt-6 text-sm text-[#9896b4]">
-                        No contact data yet.
-                      </p>
-                    ) : (
-                      <ol className="mt-4 space-y-3">
-                        {data.topContacts.map((c, idx) => (
-                          <li
-                            key={c.email}
-                            className="flex items-start justify-between gap-3 rounded-xl bg-[#faf9fe] px-3 py-2.5"
-                          >
-                            <div className="min-w-0">
-                              <span className="text-xs font-semibold text-[#9896b4]">
-                                {idx + 1}.
-                              </span>{" "}
-                              <span className="text-sm font-medium text-[#1c1b33] break-all">
-                                {c.email}
-                              </span>
-                            </div>
-                            <span className="shrink-0 text-sm font-semibold tabular-nums text-[#65637e]">
-                              {c.messageCount}
-                            </span>
-                          </li>
-                        ))}
-                      </ol>
-                    )}
-                  </div>
-
-                  <div className="rounded-2xl border border-[#e8e4f8] bg-white p-5 shadow-sm sm:p-6">
-                    <h2 className="text-lg font-bold text-[#1c1b33]">
-                      Most active sender
-                    </h2>
-                    <p className="mt-0.5 text-sm text-[#65637e]">
-                      Who sent you the most mail in this range (inbox, archive &
-                      spam).
-                    </p>
-                    {!data.mostActiveSender ? (
-                      <p className="mt-6 text-sm text-[#9896b4]">
-                        No incoming messages in this period.
-                      </p>
-                    ) : (
-                      <div className="mt-6 rounded-xl border border-[#e8e4f8] bg-[#faf9fe] px-4 py-5">
-                        <p className="text-sm font-semibold text-[#1c1b33] break-all">
-                          {data.mostActiveSender.email}
-                        </p>
-                        <p className="mt-2 text-sm text-[#65637e]">
-                          <span className="font-bold tabular-nums text-[#1c1b33]">
-                            {data.mostActiveSender.messageCount}
-                          </span>{" "}
-                          messages
-                        </p>
-                      </div>
-                    )}
                   </div>
                 </section>
               </>
