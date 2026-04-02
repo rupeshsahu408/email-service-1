@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ComposeClient, type ComposeReplySeed } from "@/components/compose/compose-client";
 
-type Folder = "inbox" | "sent" | "trash" | "archive";
+type Folder = "inbox" | "sent" | "spam" | "trash" | "archive";
 
 type Nav =
   | { kind: "folder"; folder: Folder | "starred" | "scheduled" }
@@ -47,6 +47,7 @@ type Row = {
   labelIds: string[];
   senderIdentity?: SenderIdentity | null;
   sentAnonymously?: boolean;
+  spamScore?: number;
 };
 
 type AttachmentMeta = {
@@ -211,6 +212,7 @@ function folderDisplayName(nav: Nav, labels: LabelRow[]): string {
   }
   if (nav.folder === "starred") return "Starred";
   if (nav.folder === "scheduled") return "Scheduled";
+  if (nav.folder === "spam") return "Spam";
   return nav.folder.charAt(0).toUpperCase() + nav.folder.slice(1);
 }
 
@@ -267,6 +269,17 @@ function IconStar() {
   return (
     <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
       <path fillRule="evenodd" d="M10.868 2.884c-.321-.772-1.415-.772-1.736 0l-1.83 4.401-4.753.381c-.833.067-1.171 1.107-.536 1.651l3.62 3.102-1.106 4.637c-.194.813.691 1.456 1.405 1.02L10 15.591l4.069 2.485c.713.436 1.598-.207 1.404-1.02l-1.106-4.637 3.62-3.102c.635-.544.297-1.584-.536-1.65l-4.752-.382-1.831-4.401Z" clipRule="evenodd" />
+    </svg>
+  );
+}
+function IconSpam() {
+  return (
+    <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+      <path
+        fillRule="evenodd"
+        d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.24-12.53a.75.75 0 0 1 0 1.06L11.06 10l2.18 2.18a.75.75 0 1 1-1.06 1.06L10 11.06 7.82 13.24a.75.75 0 0 1-1.06-1.06L8.94 10 6.76 7.82a.75.75 0 0 1 1.06-1.06L10 8.94l2.18-2.18a.75.75 0 0 1 1.06 0Z"
+        clipRule="evenodd"
+      />
     </svg>
   );
 }
@@ -450,6 +463,7 @@ export function InboxClient({
   const [expandedThreads, setExpandedThreads] = useState<Set<string>>(() => new Set());
   const [prefs, setPrefs] = useState<MailPrefs | null>(null);
   const [persistedInboxCount, setPersistedInboxCount] = useState(0);
+  const [spamFolderCount, setSpamFolderCount] = useState(0);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [goldenTickEligible, setGoldenTickEligible] = useState(false);
@@ -478,7 +492,8 @@ export function InboxClient({
   const conversationOn = prefs?.conversationView !== false;
   const isScheduledNav = nav.kind === "folder" && nav.folder === "scheduled";
   const selectionEnabled =
-    nav.kind === "folder" && ["inbox", "sent", "trash"].includes(nav.folder);
+    nav.kind === "folder" &&
+    ["inbox", "sent", "spam", "trash", "archive"].includes(nav.folder);
   const selectedCount = selectedIds.size;
 
   const unreadFirst = prefs?.unreadFirst === true;
@@ -499,7 +514,13 @@ export function InboxClient({
     try {
       const sp = new URLSearchParams(window.location.search);
       const folder = sp.get("folder");
-      if (folder === "trash" || folder === "inbox" || folder === "sent" || folder === "archive") {
+      if (
+        folder === "trash" ||
+        folder === "inbox" ||
+        folder === "sent" ||
+        folder === "spam" ||
+        folder === "archive"
+      ) {
         setNav({ kind: "folder", folder });
       }
     } catch {
@@ -614,6 +635,24 @@ export function InboxClient({
     return () => { cancelled = true; };
   }, []);
 
+  const refreshFolderCounts = useCallback(async () => {
+    const res = await fetch("/api/mail/folder-counts", {
+      credentials: "include",
+      cache: "no-store",
+    });
+    if (!res.ok) return;
+    const d = (await res.json()) as {
+      inboxUnread?: number;
+      spam?: number;
+    };
+    setPersistedInboxCount(Number(d.inboxUnread ?? 0));
+    setSpamFolderCount(Number(d.spam ?? 0));
+  }, []);
+
+  useEffect(() => {
+    void refreshFolderCounts();
+  }, [nav, refreshFolderCounts]);
+
   useEffect(() => {
     setListFilter("all");
   }, [nav]);
@@ -662,16 +701,14 @@ export function InboxClient({
           const valid = new Set(data.messages.map((m) => m.id));
           return new Set([...prev].filter((id) => valid.has(id)));
         });
-        if (nav.kind === "folder" && nav.folder === "inbox") {
-          setPersistedInboxCount(data.messages.filter((m) => !m.readAt).length);
-        }
+        void refreshFolderCounts();
         setLoading(false);
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [nav, searchDebounced]);
+  }, [nav, searchDebounced, refreshFolderCounts]);
 
   // Draft load/save and editor state are handled inside `ComposeClient`.
 
@@ -790,9 +827,7 @@ export function InboxClient({
       const valid = new Set(data.messages.map((m) => m.id));
       return new Set([...prev].filter((id) => valid.has(id)));
     });
-    if (nav.kind === "folder" && nav.folder === "inbox") {
-      setPersistedInboxCount(data.messages.filter((m) => !m.readAt).length);
-    }
+    void refreshFolderCounts();
   }
 
   async function cancelScheduledJob(id: string) {
@@ -961,7 +996,8 @@ export function InboxClient({
   const smartReplyAnchorMessage = useMemo(() => {
     if (!detail?.messages.length) return null;
     const incoming = detail.messages.filter(
-      (m) => m.folder === "inbox" || m.folder === "archive"
+      (m) =>
+        m.folder === "inbox" || m.folder === "archive" || m.folder === "spam"
     );
     return incoming.length ? incoming[incoming.length - 1]! : null;
   }, [detail]);
@@ -1058,6 +1094,58 @@ export function InboxClient({
       return;
     }
     setSpamBlockPrompt({ open: true, senderEmail, messageId: dm.id });
+  }
+
+  async function markMessageAsSpam(dm: DetailMessage) {
+    const res = await fetch(`/api/mail/messages/${dm.id}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ folder: "spam" }),
+    });
+    if (!res.ok) {
+      showActionNotice("Could not move to Spam.");
+      return;
+    }
+    await refreshRowsOnly();
+    await refreshFolderCounts();
+    setDetail((d) =>
+      d
+        ? {
+            ...d,
+            messages: d.messages.map((m) =>
+              m.id === dm.id ? { ...m, folder: "spam" as Folder } : m
+            ),
+          }
+        : d
+    );
+    showActionNotice("Moved to Spam. Future mail from this sender will go to Spam.");
+  }
+
+  async function markMessageNotSpam(dm: DetailMessage) {
+    const res = await fetch(`/api/mail/messages/${dm.id}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ folder: "inbox" }),
+    });
+    if (!res.ok) {
+      showActionNotice("Could not move to Inbox.");
+      return;
+    }
+    await refreshRowsOnly();
+    await refreshFolderCounts();
+    setDetail((d) =>
+      d
+        ? {
+            ...d,
+            messages: d.messages.map((m) =>
+              m.id === dm.id ? { ...m, folder: "inbox" as Folder } : m
+            ),
+          }
+        : d
+    );
+    showActionNotice("Moved to Inbox. This sender is marked as trusted.");
   }
 
   function forwardMessage(dm: DetailMessage) {
@@ -1418,6 +1506,7 @@ export function InboxClient({
         <nav className="flex-1 overflow-y-auto px-2 space-y-0.5 pb-4">
           {[
             { icon: <IconInbox />, label: "Inbox", n: { kind: "folder", folder: "inbox" } as Nav, badge: persistedInboxCount },
+            { icon: <IconSpam />, label: "Spam", n: { kind: "folder", folder: "spam" } as Nav, badge: spamFolderCount },
             { icon: <IconEdit />, label: "Drafts", n: null as Nav | null },
             { icon: <IconSend />, label: "Sent", n: { kind: "folder", folder: "sent" } as Nav },
             { icon: <IconClock />, label: "Scheduled", n: { kind: "folder", folder: "scheduled" } as Nav },
@@ -1835,6 +1924,14 @@ export function InboxClient({
                         </div>
                         <div className="flex items-center gap-1.5 mt-0.5">
                           <span className="text-[11px] text-[#9896b4] truncate flex-1">{rep.snippet}</span>
+                          {nav.kind === "folder" &&
+                            nav.folder === "spam" &&
+                            typeof rep.spamScore === "number" &&
+                            rep.spamScore > 0 && (
+                              <span className="shrink-0 text-[10px] font-medium text-[#b45309] bg-amber-50 rounded px-1 py-0.5">
+                                score {rep.spamScore}
+                              </span>
+                            )}
                           {rep.hasAttachment && <span className="text-[#9896b4] shrink-0"><IconPaperclip /></span>}
                           {conversationOn && msgs.length > 1 && (
                             <span className="text-[10px] text-[#9896b4] shrink-0 bg-[#f0edfb] rounded px-1 py-0.5">
@@ -2159,6 +2256,30 @@ export function InboxClient({
                             >
                               Block sender
                             </button>
+                            {(dm.folder === "inbox" || dm.folder === "archive") && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  void markMessageAsSpam(dm);
+                                  setOverflowMenuMessageId(null);
+                                }}
+                                className="w-full text-left px-3.5 py-2 text-xs font-medium text-[#1c1b33] hover:bg-[#f8f6fd]"
+                              >
+                                Mark as spam
+                              </button>
+                            )}
+                            {dm.folder === "spam" && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  void markMessageNotSpam(dm);
+                                  setOverflowMenuMessageId(null);
+                                }}
+                                className="w-full text-left px-3.5 py-2 text-xs font-medium text-[#1c1b33] hover:bg-[#f8f6fd]"
+                              >
+                                Not spam
+                              </button>
+                            )}
                             <button
                               type="button"
                               onClick={() => {

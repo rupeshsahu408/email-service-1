@@ -2,7 +2,7 @@
  * Phase 1 storage accounting — single source of truth for per-user byte usage and plan limits.
  *
  * Counting policy (PostgreSQL UTF-8 `octet_length` on text/varchar + integer `size_bytes` for blobs):
- * - **messages** (all folders: inbox, sent, trash, archive): subject, snippet, body, addresses,
+ * - **messages** (all folders: inbox, sent, spam, trash, archive): subject, snippet, body, addresses,
  *   and optional metadata strings. Snippet overlaps body semantically but is stored separately; we
  *   count both for a stable DB-oriented total. Trash counts until the message row is hard-deleted.
  * - **attachments** (mailbox): sum of `size_bytes` for files tied to the user's messages.

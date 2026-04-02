@@ -19,11 +19,12 @@ import {
 } from "@/lib/trash-lifecycle";
 import { ensureUserSettingsRow } from "@/lib/user-settings";
 import { isPostgresUndefinedColumnError } from "@/lib/pg-error";
+import { upsertSenderMailPreference } from "@/lib/sender-mail-preference";
 
 export const dynamic = "force-dynamic";
 
 const patchSchema = z.object({
-  folder: z.enum(["inbox", "sent", "trash", "archive"]).optional(),
+  folder: z.enum(["inbox", "sent", "spam", "trash", "archive"]).optional(),
   read: z.boolean().optional(),
   starred: z.boolean().optional(),
   pinned: z.boolean().optional(),
@@ -160,15 +161,44 @@ export async function PATCH(
   }
 
   const db = getDb();
-  const existing = await db
-    .select({ id: messages.id, folder: messages.folder })
-    .from(messages)
-    .where(and(eq(messages.id, id), eq(messages.userId, user.id)))
-    .limit(1);
-  if (existing.length === 0) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  let row: {
+    id: string;
+    folder: MessageFolder;
+    fromAddr: string;
+    spamScore: number;
+  };
+  try {
+    const existing = await db
+      .select({
+        id: messages.id,
+        folder: messages.folder,
+        fromAddr: messages.fromAddr,
+        spamScore: messages.spamScore,
+      })
+      .from(messages)
+      .where(and(eq(messages.id, id), eq(messages.userId, user.id)))
+      .limit(1);
+    if (existing.length === 0) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    row = existing[0]!;
+  } catch (e) {
+    if (!isPostgresUndefinedColumnError(e)) throw e;
+    const fallback = await db
+      .select({
+        id: messages.id,
+        folder: messages.folder,
+        fromAddr: messages.fromAddr,
+      })
+      .from(messages)
+      .where(and(eq(messages.id, id), eq(messages.userId, user.id)))
+      .limit(1);
+    if (fallback.length === 0) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    const f = fallback[0]!;
+    row = { id: f.id, folder: f.folder, fromAddr: f.fromAddr, spamScore: 0 };
   }
-
   const updates: Partial<{
     folder: MessageFolder;
     readAt: Date | null;
@@ -177,13 +207,27 @@ export async function PATCH(
     pinnedAt: Date | null;
     trashMovedAt: Date | null;
     trashDeleteAfterAt: Date | null;
+    spamScore: number;
   }> = {};
+  let trainSenderSpam = false;
+  let trainSenderTrust = false;
+
   if (parsed.data.folder !== undefined) {
-    if (parsed.data.folder === "trash") {
+    const nextFolder = parsed.data.folder;
+    if (nextFolder === "trash") {
       Object.assign(updates, getTrashLifecyclePatch());
     } else {
-      updates.folder = parsed.data.folder;
+      updates.folder = nextFolder;
       Object.assign(updates, getRestoreFromTrashPatch());
+    }
+
+    if (nextFolder === "spam" && row.folder !== "spam") {
+      trainSenderSpam = true;
+      updates.spamScore = Math.max(Number(row.spamScore ?? 0), 10);
+    }
+    if (nextFolder === "inbox" && row.folder === "spam") {
+      trainSenderTrust = true;
+      updates.spamScore = 0;
     }
   }
   if (parsed.data.read === true) {
@@ -200,10 +244,44 @@ export async function PATCH(
   }
 
   if (Object.keys(updates).length > 0) {
-    await db
-      .update(messages)
-      .set(updates)
-      .where(and(eq(messages.id, id), eq(messages.userId, user.id)));
+    try {
+      await db
+        .update(messages)
+        .set(updates)
+        .where(and(eq(messages.id, id), eq(messages.userId, user.id)));
+    } catch (e) {
+      if (!isPostgresUndefinedColumnError(e)) throw e;
+      const { spamScore: _s, ...rest } = updates;
+      if (Object.keys(rest).length > 0) {
+        await db
+          .update(messages)
+          .set(rest)
+          .where(and(eq(messages.id, id), eq(messages.userId, user.id)));
+      }
+    }
+  }
+
+  if (trainSenderSpam) {
+    try {
+      await upsertSenderMailPreference({
+        userId: user.id,
+        fromAddr: row.fromAddr,
+        preference: "spam",
+      });
+    } catch {
+      /* preferences table may be missing on unmigrated DB */
+    }
+  }
+  if (trainSenderTrust) {
+    try {
+      await upsertSenderMailPreference({
+        userId: user.id,
+        fromAddr: row.fromAddr,
+        preference: "trust",
+      });
+    } catch {
+      /* ignore */
+    }
   }
 
   if (parsed.data.labelIds !== undefined) {

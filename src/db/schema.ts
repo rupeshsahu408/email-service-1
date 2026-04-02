@@ -666,6 +666,7 @@ export const passkeyCredentials = pgTable(
 export const messageFolderEnum = [
   "inbox",
   "sent",
+  "spam",
   "trash",
   "archive",
 ] as const;
@@ -706,6 +707,8 @@ export const messages = pgTable(
     trashMovedAt: timestamp("trash_moved_at", { withTimezone: true }),
     /** Auto-delete cutoff timestamp (trash_moved_at + 30 days). */
     trashDeleteAfterAt: timestamp("trash_delete_after_at", { withTimezone: true }),
+    /** Heuristic / manual spam score (inbound classification; 5+ typically means spam folder). */
+    spamScore: integer("spam_score").notNull().default(0),
   },
   (t) => [
     index("messages_user_folder_created_idx").on(
@@ -779,6 +782,33 @@ export const blockedSenders = pgTable(
       .notNull(),
   },
   (t) => [uniqueIndex("blocked_senders_user_email").on(t.userId, t.email)]
+);
+
+export const senderMailPreferenceEnum = ["trust", "spam"] as const;
+export type SenderMailPreference = (typeof senderMailPreferenceEnum)[number];
+
+export const senderMailPreferences = pgTable(
+  "sender_mail_preferences",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    pattern: varchar("pattern", { length: 320 }).notNull(),
+    preference: varchar("preference", { length: 16 })
+      .notNull()
+      .$type<SenderMailPreference>(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    uniqueIndex("sender_mail_preferences_user_pattern_unique").on(
+      t.userId,
+      t.pattern
+    ),
+    index("sender_mail_preferences_user_idx").on(t.userId),
+  ]
 );
 
 export const filterRuleActionEnum = ["trash", "label"] as const;

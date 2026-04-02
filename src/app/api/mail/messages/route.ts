@@ -23,7 +23,7 @@ import { isPostgresUndefinedColumnError } from "@/lib/pg-error";
 
 export const dynamic = "force-dynamic";
 
-const folders: MessageFolder[] = ["inbox", "sent", "trash", "archive"];
+const folders: MessageFolder[] = ["inbox", "sent", "spam", "trash", "archive"];
 
 const MAX_PAGE = 500;
 const MAX_OFFSET = 20_000;
@@ -132,6 +132,7 @@ export async function GET(request: NextRequest) {
     threadId: messages.threadId,
     hasAttachment: messages.hasAttachment,
     sentAnonymously: messages.sentAnonymously,
+    spamScore: messages.spamScore,
   };
   const selectShapeWithTrash = {
     ...selectShape,

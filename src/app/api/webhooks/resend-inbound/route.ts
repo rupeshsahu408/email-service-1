@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { AttachmentData } from "resend";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import { attachments, messageLabels, messages } from "@/db/schema";
 import { getEmailDomain } from "@/lib/constants";
@@ -18,6 +18,7 @@ import {
   getInboundDisposition,
   isSenderBlocked,
 } from "@/lib/inbound-policy";
+import { resolveExternalInboundFolder } from "@/lib/spam-inbound-resolution";
 import { logError, logInfo, logWarn } from "@/lib/logger";
 import { stripTrackingFromHtml } from "@/lib/mail-filter";
 import {
@@ -312,14 +313,24 @@ export async function POST(request: NextRequest) {
             bytes: mailboxMessageContentBytesExpr(messages),
           })
           .from(messages)
-          .where(and(eq(messages.userId, userId), eq(messages.folder, "inbox"))),
+          .where(
+            and(
+              eq(messages.userId, userId),
+              inArray(messages.folder, ["inbox", "spam"])
+            )
+          ),
         getDb()
           .select({
             bytes: sql<number>`coalesce(sum(${attachments.sizeBytes}), 0)::bigint`,
           })
           .from(attachments)
           .innerJoin(messages, eq(attachments.messageId, messages.id))
-          .where(and(eq(messages.userId, userId), eq(messages.folder, "inbox"))),
+          .where(
+            and(
+              eq(messages.userId, userId),
+              inArray(messages.folder, ["inbox", "spam"])
+            )
+          ),
       ]);
       const inboxTextBytes = inboxTextRows.reduce(
         (sum, r) => sum + Number(r.bytes ?? 0),
@@ -341,7 +352,17 @@ export async function POST(request: NextRequest) {
 
       const threadId = await resolveInboundThreadId(userId, inReplyTo);
       const disposition = await getInboundDisposition(userId, fromAddr);
-      const targetFolder = disposition.kind === "trash" ? "trash" : "inbox";
+      const attNames = attachmentBuffers.map((a) => a.filename);
+      const inboundResolved = await resolveExternalInboundFolder({
+        userId,
+        fromAddr,
+        subject,
+        bodyText: userBodyText,
+        bodyHtml: userHtml,
+        attachmentFilenames: attNames,
+        disposition,
+      });
+      const targetFolder = inboundResolved.folder;
 
       const persistInboundAttachments =
         attachmentCount > 0 && !skipInboundAttachments;
@@ -364,15 +385,16 @@ export async function POST(request: NextRequest) {
           folder: targetFolder,
           mailedBy: authMeta.mailedBy,
           signedBy: authMeta.signedBy,
+          spamScore: inboundResolved.spamScore,
         });
 
         logInfo("resend_webhook_ingested", { userId, messageIdRow, created });
 
-        if (created && disposition.kind === "label") {
+        if (created && inboundResolved.applyLabelId) {
           try {
             await getDb().insert(messageLabels).values({
               messageId: messageIdRow,
-              labelId: disposition.labelId,
+              labelId: inboundResolved.applyLabelId,
             });
           } catch {
             /* ignore duplicate / constraint */

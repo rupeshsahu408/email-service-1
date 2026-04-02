@@ -212,6 +212,8 @@ export async function ingestInboundMessage(params: {
   folder?: MessageFolder;
   mailedBy?: string | null;
   signedBy?: string | null;
+  /** Set for external inbound spam scoring (internal mail can omit). */
+  spamScore?: number;
 }): Promise<{ id: string; created: boolean; tempInbox: boolean }> {
   // If the email is addressed to a user's temporary inbox alias,
   // store it in the temp inbox tables (private + OTP focused).
@@ -323,6 +325,7 @@ export async function ingestInboundMessage(params: {
             }
           : {}),
         hasAttachment: params.hasAttachment ?? false,
+        spamScore: Math.max(0, Math.min(32767, params.spamScore ?? 0)),
       })
       .returning({ id: messages.id });
 
