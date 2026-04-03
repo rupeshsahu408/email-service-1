@@ -544,6 +544,7 @@ export function LandingPage() {
                 { label: "Contact",           href: "mailto:support@sendora.me" },
                 { label: "Privacy Policy",    href: "#" },
                 { label: "Terms & Conditions",href: "#" },
+                { label: "Security 🔐",       href: "#" },
               ].map(({ label, href }) => (
                 <a
                   key={label}
