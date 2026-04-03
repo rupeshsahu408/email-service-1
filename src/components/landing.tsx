@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { BrandsMarquee } from "@/components/brands-marquee";
 
 const domain = process.env.NEXT_PUBLIC_EMAIL_DOMAIN ?? "auramail.app";
 
@@ -352,6 +353,9 @@ export function LandingPage() {
             ))}
           </div>
         </section>
+
+        {/* ── Brands That Trust Us ── */}
+        <BrandsMarquee />
 
         {/* ── User Trust / Social Proof ── */}
         <section ref={trustRef} className="relative overflow-hidden bg-[#0e0c22] px-6 py-16 sm:py-20">
