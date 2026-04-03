@@ -844,7 +844,7 @@ export function LandingPage() {
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/30">Company</p>
             <nav className="flex flex-col gap-3">
               {[
-                { label: "About", href: "#" },
+                { label: "About", href: "/about" },
                 { label: "Contact", href: "mailto:support@sendora.me" },
                 { label: "Privacy Policy", href: "/privacy-policy" },
                 { label: "Terms & Conditions", href: "/terms" },

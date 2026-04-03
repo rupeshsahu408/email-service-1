@@ -1,0 +1,14 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "2L2dQ00XRGv_ZP6xgSCqh"
+uri = "file://public/about/datacenter-india.png"
+type = "image"
+title = "india-datacenter"
+
+[[generated]]
+id = "cCGQ6SzxZ42-GfhrbFhnX"
+uri = "file://public/about/datacenter-futuristic.png"
+type = "image"
+title = "futuristic-datacenter"
