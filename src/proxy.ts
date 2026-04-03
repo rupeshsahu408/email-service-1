@@ -27,6 +27,7 @@ function isPublicPath(pathname: string): boolean {
     "/about",
     "/contact",
     "/help",
+    "/security",
   ];
   return authPages.includes(pathname);
 }
