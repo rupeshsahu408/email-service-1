@@ -1105,13 +1105,16 @@ export function ComposeClient({
         style={mode === "fullscreen" ? { width: "100%", height: "100%" } : undefined}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-2.5 bg-neutral-50 border-b border-neutral-200">
-          <span className="text-sm font-medium text-neutral-800">New message</span>
-          <div className="flex items-center gap-1.5">
+        <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-[#6d4aff] to-[#8a68ff]">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-white/40" />
+            <span className="text-[13px] font-semibold text-white tracking-tight">New message</span>
+          </div>
+          <div className="flex items-center gap-0.5">
             <button
               type="button"
               onClick={() => setMode("minimized")}
-              className="inline-flex items-center justify-center w-8 h-8 rounded-full text-neutral-500 hover:text-neutral-900 hover:bg-neutral-200/70 transition-colors"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-full text-white/70 hover:text-white hover:bg-white/15 transition-colors"
               title="Minimize"
             >
               <IconMinimize />
@@ -1122,7 +1125,7 @@ export function ComposeClient({
               onClick={() =>
                 setMode((m) => (m === "maximized" ? "floating" : "maximized"))
               }
-              className="inline-flex items-center justify-center w-8 h-8 rounded-full text-neutral-500 hover:text-neutral-900 hover:bg-neutral-200/70 transition-colors"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-full text-white/70 hover:text-white hover:bg-white/15 transition-colors"
               title="Maximize"
             >
               <IconMaximize />
@@ -1133,7 +1136,7 @@ export function ComposeClient({
               onClick={() =>
                 setMode((m) => (m === "fullscreen" ? "floating" : "fullscreen"))
               }
-              className="inline-flex items-center justify-center w-8 h-8 rounded-full text-neutral-500 hover:text-neutral-900 hover:bg-neutral-200/70 transition-colors"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-full text-white/70 hover:text-white hover:bg-white/15 transition-colors"
               title="Full-screen"
             >
               <IconFullscreen />
@@ -1142,7 +1145,7 @@ export function ComposeClient({
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex items-center justify-center w-8 h-8 rounded-full text-neutral-500 hover:text-neutral-900 hover:bg-neutral-200/70 transition-colors"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-full text-white/70 hover:text-white hover:bg-white/20 transition-colors ml-1"
               title="Close"
             >
               <IconClose />
@@ -1167,12 +1170,12 @@ export function ComposeClient({
             </div>
           )}
           {isBusiness && outboundMailboxes.length > 0 && (
-            <div className="border-b border-neutral-200 px-4 py-2 flex items-center gap-3">
-              <span className="w-10 shrink-0 text-xs font-medium text-neutral-500">
+            <div className="border-b border-[#ede9fa] px-4 py-2.5 flex items-center gap-3 bg-white">
+              <span className="w-14 shrink-0 text-[11px] font-semibold text-[#65637e] uppercase tracking-wide">
                 From
               </span>
               <select
-                className="flex-1 bg-transparent text-sm text-neutral-900 outline-none"
+                className="flex-1 bg-transparent text-sm text-[#1c1b33] outline-none cursor-pointer hover:text-[#6d4aff] transition-colors"
                 value={mailboxId}
                 onChange={(e) => setMailboxId(e.target.value)}
               >
@@ -1188,36 +1191,54 @@ export function ComposeClient({
           )}
 
           {isBusiness && goldenTickEligible && composePreviewFrom && (
-            <div className="border-b border-neutral-200 px-4 py-2 bg-[#fffbeb]">
-              <p className="text-[10px] font-semibold text-amber-800/80 mb-1">
-                How you appear in Sendora
+            <div className="border-b border-amber-100 px-4 py-2.5 bg-gradient-to-r from-amber-50 to-yellow-50/60">
+              <p className="text-[10px] font-semibold text-amber-700 uppercase tracking-wide mb-1">
+                Sender preview
               </p>
-              <div className="flex items-center gap-1.5 text-xs text-[#1c1b33] min-w-0">
-                <span className="truncate">{composePreviewFrom}</span>
+              <div className="flex items-center gap-2 text-xs text-[#1c1b33] min-w-0">
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                <span className="truncate font-medium">{composePreviewFrom}</span>
               </div>
             </div>
           )}
 
-          <div className="border-b border-[#e8e4f8] px-4 py-3 bg-[#f8f6fd]">
-            <label className="flex items-start gap-3 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={sendAnonymously}
-                onChange={(e) => setSendAnonymously(e.target.checked)}
-                className="mt-1 h-4 w-4 rounded border-[#d9d3f3] accent-[#6d4aff] shrink-0"
-              />
-              <span className="min-w-0">
-                <span className="text-sm font-semibold text-[#1c1b33]">Send anonymously</span>
-                <p className="text-xs text-[#65637e] mt-1 leading-relaxed">
-                  Your real email will be hidden from the recipient. Sendora sends from a unique address on your domain (for example{" "}
-                  <span className="whitespace-nowrap font-mono text-[11px] text-[#44435a]">
+          <div className="border-b border-[#ede9fa] px-4 py-3 bg-[#faf8ff]">
+            <label className="flex items-center gap-3 cursor-pointer select-none group">
+              <div className="relative shrink-0">
+                <div
+                  className={[
+                    "w-9 h-5 rounded-full transition-colors duration-200",
+                    sendAnonymously ? "bg-[#6d4aff]" : "bg-neutral-200 group-hover:bg-neutral-300",
+                  ].join(" ")}
+                />
+                <div
+                  className={[
+                    "absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200",
+                    sendAnonymously ? "translate-x-4" : "translate-x-0",
+                  ].join(" ")}
+                />
+                <input
+                  type="checkbox"
+                  checked={sendAnonymously}
+                  onChange={(e) => setSendAnonymously(e.target.checked)}
+                  className="sr-only"
+                />
+              </div>
+              <span className="min-w-0 flex-1">
+                <span className="text-sm font-semibold text-[#1c1b33] flex items-center gap-1.5">
+                  Send anonymously
+                  {sendAnonymously && (
+                    <span className="text-[10px] font-bold text-[#6d4aff] bg-[#6d4aff]/10 px-1.5 py-0.5 rounded-full uppercase tracking-wide">On</span>
+                  )}
+                </span>
+                <p className="text-xs text-[#65637e] mt-0.5 leading-relaxed">
+                  Your identity stays hidden. Replies still reach your inbox via{" "}
+                  <span className="whitespace-nowrap font-mono text-[11px] text-[#44435a] bg-[#f0edff] px-1 rounded">
                     anon-…@{ANON_EMAIL_DOMAIN_SAMPLE}
                   </span>
-                  ) so replies can reach your inbox while your personal address stays private. Your account is still associated with this send
-                  for safety and moderation.
                 </p>
                 {sendAnonymously && isBusiness && outboundMailboxes.length > 0 ? (
-                  <p className="text-[11px] text-[#5b3dff] mt-1.5 font-medium">
+                  <p className="text-[11px] text-[#5b3dff] mt-1 font-medium">
                     The selected “From” mailbox is not used for anonymous delivery.
                   </p>
                 ) : null}
@@ -1231,11 +1252,11 @@ export function ComposeClient({
             onChange={(next) => setToList(next)}
             required
             rightSlot={
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 {!showCc && ccList.length === 0 && (
                   <button
                     type="button"
-                    className="text-xs text-neutral-500 hover:text-neutral-900 transition-colors"
+                    className="text-[11px] font-semibold text-[#65637e] hover:text-[#6d4aff] border border-[#ddd6fe] hover:border-[#6d4aff] rounded-full px-2 py-0.5 transition-colors"
                     onClick={() => setShowCc(true)}
                   >
                     Cc
@@ -1244,7 +1265,7 @@ export function ComposeClient({
                 {!showBcc && bccList.length === 0 && (
                   <button
                     type="button"
-                    className="text-xs text-neutral-500 hover:text-neutral-900 transition-colors"
+                    className="text-[11px] font-semibold text-[#65637e] hover:text-[#6d4aff] border border-[#ddd6fe] hover:border-[#6d4aff] rounded-full px-2 py-0.5 transition-colors"
                     onClick={() => setShowBcc(true)}
                   >
                     Bcc
@@ -1266,11 +1287,11 @@ export function ComposeClient({
             />
           )}
 
-          <div className="border-b border-neutral-200 px-4 py-2 flex items-center gap-3">
-            <span className="w-10 shrink-0 text-xs font-medium text-neutral-500">Subj</span>
+          <div className="border-b border-[#ede9fa] px-4 py-2.5 flex items-center gap-3">
+            <span className="w-14 shrink-0 text-[11px] font-semibold text-[#65637e] uppercase tracking-wide">Subject</span>
             <input
-              className="flex-1 bg-transparent text-sm text-neutral-900 outline-none placeholder:text-neutral-400 py-1"
-              placeholder="Subject"
+              className="flex-1 bg-transparent text-sm text-[#1c1b33] outline-none placeholder:text-[#b4b0cc] py-1 font-medium"
+              placeholder="Add a subject…"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
             />
@@ -1318,7 +1339,7 @@ export function ComposeClient({
 
           {/* Attachments strip */}
           {(uploadItems.length > 0 || draftAttachments.length > 0) && (
-            <div className="px-4 py-2 border-t border-neutral-200 bg-white">
+            <div className="px-4 py-2.5 border-t border-[#ede9fa] bg-[#faf8ff]">
               <div className="flex flex-wrap gap-2">
                 {uploadItems.map((u) => (
                   <div
@@ -1397,9 +1418,9 @@ export function ComposeClient({
           )}
 
           {/* Footer */}
-          <div className="px-4 py-3 border-t border-neutral-200 bg-neutral-50">
+          <div className="px-4 py-3 border-t border-[#ede9fa] bg-[#faf8ff]">
             <div className="flex items-center justify-between gap-3 pb-2">
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-0.5 flex-wrap">
                 {(
                   [
                     {
@@ -1565,7 +1586,7 @@ export function ComposeClient({
                         key={b.key}
                         type="button"
                         className={[
-                          "inline-flex items-center justify-center w-9 h-9 rounded-full text-neutral-600 hover:text-neutral-900 hover:bg-neutral-200/70 transition-colors disabled:opacity-40 disabled:hover:bg-transparent",
+                          "inline-flex items-center justify-center w-8 h-8 rounded-lg text-[#65637e] hover:text-[#6d4aff] hover:bg-[#6d4aff]/8 transition-colors disabled:opacity-40 disabled:hover:bg-transparent",
                           (b as { className?: string }).className ?? "",
                         ].join(" ")}
                         aria-label={b.label}
@@ -1577,12 +1598,14 @@ export function ComposeClient({
                       </button>
                     );
                   }
-                  return <div key={b.key} className="w-px h-5 bg-neutral-300 mx-1" />;
+                  return <div key={b.key} className="w-px h-4 bg-[#ddd9f0] mx-0.5" />;
                 })}
+
+                <div className="w-px h-4 bg-[#ddd9f0] mx-0.5" />
 
                 <button
                   type="button"
-                  className="inline-flex items-center justify-center gap-1.5 px-3 h-9 rounded-full text-neutral-600 hover:text-neutral-900 hover:bg-neutral-200/70 transition-colors disabled:opacity-40 disabled:hover:bg-transparent"
+                  className="inline-flex items-center justify-center gap-1.5 px-2.5 h-8 rounded-lg bg-[#6d4aff]/10 text-[#6d4aff] hover:bg-[#6d4aff]/18 transition-colors disabled:opacity-40 disabled:hover:bg-[#6d4aff]/10"
                   aria-label="Write with AI"
                   title="Write with AI"
                   onClick={() => {
@@ -1597,13 +1620,13 @@ export function ComposeClient({
                   }}
                   disabled={uploadItems.length > 0 || aiLoading}
                 >
-                  <Sparkles className="w-4 h-4" />
-                  <span className="text-xs font-semibold whitespace-nowrap">✨ Write with AI</span>
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span className="text-xs font-semibold whitespace-nowrap">AI</span>
                 </button>
 
                 <button
                   type="button"
-                  className="inline-flex items-center justify-center w-9 h-9 rounded-full text-neutral-600 hover:text-neutral-900 hover:bg-neutral-200/70 transition-colors"
+                  className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-[#65637e] hover:text-[#6d4aff] hover:bg-[#6d4aff]/8 transition-colors"
                   aria-label="More"
                   onClick={() => {
                     setEmojiOpen(false);
@@ -1634,7 +1657,7 @@ export function ComposeClient({
                   onChange={(e) => void handleFiles(Array.from(e.target.files ?? []))}
                 />
                 {emojiOpen && (
-                  <div className="absolute right-0 top-10 z-30 w-[280px] rounded-xl border border-neutral-200 bg-white shadow-lg p-2">
+                  <div className="absolute right-0 top-10 z-30 w-[280px] rounded-2xl border border-[#ede9fa] bg-white shadow-xl p-2.5">
                     <div className="grid grid-cols-10 gap-1 max-h-[180px] overflow-y-auto">
                       {[
                         "😀",
@@ -1686,10 +1709,10 @@ export function ComposeClient({
                 )}
 
                 {moreOpen && (
-                  <div className="absolute right-0 top-10 z-30 w-[220px] rounded-xl border border-neutral-200 bg-white shadow-lg p-1">
+                  <div className="absolute right-0 top-10 z-30 w-[200px] rounded-2xl border border-[#ede9fa] bg-white shadow-xl p-1.5">
                     <button
                       type="button"
-                      className="w-full text-left px-3 py-2 rounded-lg text-sm hover:bg-neutral-100"
+                      className="w-full text-left px-3 py-2 rounded-xl text-sm text-[#1c1b33] hover:bg-[#f7f4ff] hover:text-[#6d4aff] transition-colors disabled:opacity-50"
                       onClick={() => {
                         setMoreOpen(false);
                         setEmojiOpen(false);
@@ -1705,7 +1728,7 @@ export function ComposeClient({
                     </button>
                     <button
                       type="button"
-                      className="w-full text-left px-3 py-2 rounded-lg text-sm hover:bg-neutral-100"
+                      className="w-full text-left px-3 py-2 rounded-xl text-sm text-[#1c1b33] hover:bg-[#f7f4ff] hover:text-[#6d4aff] transition-colors"
                       onClick={() => {
                         saveDraft();
                         setMoreOpen(false);
@@ -1713,9 +1736,10 @@ export function ComposeClient({
                     >
                       Save draft
                     </button>
+                    <div className="my-1 border-t border-[#ede9fa]" />
                     <button
                       type="button"
-                      className="w-full text-left px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50"
+                      className="w-full text-left px-3 py-2 rounded-xl text-sm text-red-600 hover:bg-red-50 transition-colors"
                       onClick={() => void discardDraft()}
                       disabled={undoJobId !== null}
                     >
@@ -1725,8 +1749,8 @@ export function ComposeClient({
                 )}
 
                 {scheduleOpen && !undoJobId && (
-                  <div className="absolute right-0 top-10 z-30 w-[340px] rounded-xl border border-neutral-200 bg-white shadow-lg p-3">
-                    <div className="text-xs font-medium text-neutral-700 mb-2">
+                  <div className="absolute right-0 top-10 z-30 w-[320px] rounded-2xl border border-[#ede9fa] bg-white shadow-xl p-4">
+                    <div className="text-xs font-semibold text-[#65637e] uppercase tracking-wide mb-3">
                       Schedule send
                     </div>
                     <div className="flex items-center gap-2">
@@ -1734,25 +1758,25 @@ export function ComposeClient({
                         type="datetime-local"
                         value={scheduleAt}
                         onChange={(e) => setScheduleAt(e.target.value)}
-                        className="flex-1 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 outline-none focus:border-neutral-400"
+                        className="flex-1 rounded-xl border border-[#ede9fa] bg-white px-3 py-2 text-sm text-[#1c1b33] outline-none focus:border-[#6d4aff]"
                       />
                       <button
                         type="button"
                         onClick={() => void scheduleSend()}
                         disabled={uploadItems.length > 0}
-                        className="rounded-full bg-neutral-900 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-800 transition-colors disabled:opacity-60"
+                        className="rounded-full bg-[#6d4aff] px-4 py-2 text-sm font-semibold text-white hover:bg-[#5b3dff] transition-colors disabled:opacity-60"
                       >
                         Set
                       </button>
                     </div>
-                    <div className="flex justify-end mt-2">
+                    <div className="flex justify-end mt-3">
                       <button
                         type="button"
                         onClick={() => {
                           setScheduleOpen(false);
                           setScheduleAt("");
                         }}
-                        className="text-xs font-medium text-neutral-500 hover:text-neutral-900"
+                        className="text-xs font-medium text-[#65637e] hover:text-[#1c1b33] transition-colors"
                       >
                         Cancel
                       </button>
@@ -1762,9 +1786,13 @@ export function ComposeClient({
               </div>
             </div>
 
-            <div className="flex items-center justify-between gap-3 pt-2">
+            <div className="flex items-center justify-between gap-3 pt-2.5">
               <div className="min-w-0">
-                {sendError && <div className="text-xs text-red-600">{sendError}</div>}
+                {sendError && (
+                  <div className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-2.5 py-1.5">
+                    {sendError}
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center gap-2">
@@ -1773,7 +1801,7 @@ export function ComposeClient({
                     type="button"
                     onClick={() => void undoScheduledSend()}
                     disabled={uploadItems.length > 0}
-                    className="rounded-full bg-neutral-900 px-5 py-2 text-sm font-semibold text-white hover:bg-neutral-800 transition-colors disabled:opacity-60"
+                    className="rounded-full border border-[#ddd6fe] bg-white px-5 py-2 text-sm font-semibold text-[#6d4aff] hover:bg-[#f7f4ff] transition-colors disabled:opacity-60"
                     title="Cancel the send job before it fires"
                   >
                     Undo ({undoSecondsLeft}s)
@@ -1782,7 +1810,8 @@ export function ComposeClient({
                   <button
                     type="submit"
                     disabled={uploadItems.length > 0}
-                    className="rounded-full bg-[#6d4aff] px-6 py-2.5 text-sm font-semibold text-white hover:bg-[#5b3dff] transition-colors disabled:opacity-60 disabled:hover:bg-[#6d4aff]"
+                    className="rounded-full bg-[#6d4aff] px-7 py-2.5 text-sm font-semibold text-white hover:bg-[#5b3dff] active:bg-[#4f35e0] transition-colors disabled:opacity-60 disabled:hover:bg-[#6d4aff] shadow-sm shadow-[#6d4aff]/30"
+                    style={{ boxShadow: "0 2px 12px rgba(109,74,255,0.25)" }}
                   >
                     Send
                   </button>

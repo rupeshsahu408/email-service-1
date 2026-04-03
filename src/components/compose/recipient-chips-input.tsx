@@ -65,8 +65,8 @@ export function RecipientChipsInput({
   }
 
   return (
-    <div className="flex items-start gap-3 px-4 py-2 border-b border-neutral-200">
-      <div className="w-10 shrink-0 pt-1 text-xs font-medium text-neutral-500">
+    <div className="flex items-start gap-3 px-4 py-2.5 border-b border-[#ede9fa]">
+      <div className="w-14 shrink-0 pt-1.5 text-[11px] font-semibold text-[#65637e] uppercase tracking-wide">
         {label}
       </div>
 
@@ -84,24 +84,32 @@ export function RecipientChipsInput({
               <span
                 key={email}
                 className={[
-                  "inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-[12.5px] leading-none",
+                  "inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-[12px] leading-none",
                   invalid
-                    ? "border-red-300 bg-red-50 text-red-700"
-                    : "border-neutral-200 bg-neutral-50 text-neutral-800",
+                    ? "border-red-200 bg-red-50 text-red-700"
+                    : "border-[#ddd6fe] bg-[#f3f0ff] text-[#1c1b33]",
                 ].join(" ")}
               >
-                <span className="w-5 h-5 rounded-full bg-white border border-neutral-200 flex items-center justify-center text-[11px] text-neutral-600">
+                <span
+                  className={[
+                    "w-4.5 h-4.5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0",
+                    invalid
+                      ? "bg-red-100 text-red-600"
+                      : "bg-[#6d4aff] text-white",
+                  ].join(" ")}
+                  style={{ width: "18px", height: "18px", fontSize: "10px" }}
+                >
                   {emailInitial(email)}
                 </span>
-                <span className="max-w-[260px] truncate">{email}</span>
+                <span className="max-w-[220px] truncate text-[12px]">{email}</span>
                 {!disabled && (
                   <button
                     type="button"
-                    className="ml-0.5 inline-flex items-center justify-center rounded-full w-5 h-5 text-neutral-500 hover:text-neutral-900 hover:bg-neutral-200/60 transition-colors"
+                    className="ml-0.5 inline-flex items-center justify-center rounded-full w-4 h-4 text-[#65637e] hover:text-[#1c1b33] hover:bg-[#ddd6fe] transition-colors"
                     onClick={() => onChange(value.filter((v) => v !== email))}
                     aria-label={`Remove ${email}`}
                   >
-                    <X className="w-3.5 h-3.5" />
+                    <X className="w-2.5 h-2.5" />
                   </button>
                 )}
               </span>
@@ -147,14 +155,14 @@ export function RecipientChipsInput({
             required={required && value.length === 0}
             placeholder={value.length === 0 ? placeholder : ""}
             className={[
-              "min-w-[120px] flex-1 bg-transparent text-sm text-neutral-900 outline-none placeholder:text-neutral-400 py-1",
+              "min-w-[120px] flex-1 bg-transparent text-sm text-[#1c1b33] outline-none placeholder:text-[#b4b0cc] py-1",
               hasInvalid ? "caret-red-600" : "",
             ].join(" ")}
             aria-invalid={hasInvalid || undefined}
           />
         </div>
         {hasInvalid && (
-          <div className="text-[11px] text-red-600 mt-0.5">
+          <div className="text-[11px] text-red-500 mt-0.5">
             One or more emails look invalid.
           </div>
         )}
