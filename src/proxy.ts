@@ -22,6 +22,7 @@ function isPublicPath(pathname: string): boolean {
     "/signup",
     "/forgot-password",
     "/reset-password",
+    "/privacy-policy",
   ];
   return authPages.includes(pathname);
 }
