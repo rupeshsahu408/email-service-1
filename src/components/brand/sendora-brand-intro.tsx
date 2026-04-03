@@ -1,238 +1,285 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 type Props = {
-  /** Called after the sequence (or immediately if reduced motion / skip / fail-safe). */
   onComplete: () => void;
 };
 
-const FAILSAFE_MS = 3500;
-const COMPLETE_NORMAL_MS = 2350;
+const INTRO_DURATION_MS = 2100;
+const EXIT_DURATION_MS  = 380;
+const FAILSAFE_MS       = 4500;
 
-/**
- * Full-screen premium brand moment after successful auth.
- * SVG ribbon strokes + wordmark — CSS-driven, no animation libraries.
- */
+const KEYFRAMES = `
+@keyframes scin-logo {
+  0%   { opacity: 0; transform: scale(0.62); filter: drop-shadow(0 0 0px rgba(109,74,255,0)); }
+  26%  { opacity: 1; transform: scale(1.09);
+         filter: drop-shadow(0 0 48px rgba(109,74,255,1))
+                 drop-shadow(0 0 90px rgba(59,130,246,0.75))
+                 drop-shadow(0 0 120px rgba(34,211,238,0.4)); }
+  58%  { transform: scale(0.975);
+         filter: drop-shadow(0 0 22px rgba(109,74,255,0.75))
+                 drop-shadow(0 0 55px rgba(59,130,246,0.45)); }
+  100% { opacity: 1; transform: scale(1);
+         filter: drop-shadow(0 0 18px rgba(109,74,255,0.55))
+                 drop-shadow(0 0 40px rgba(59,130,246,0.3)); }
+}
+@keyframes scin-ring1 {
+  0%   { opacity: 0; transform: scale(0.55); }
+  12%  { opacity: 0.55; }
+  100% { opacity: 0; transform: scale(3.4); }
+}
+@keyframes scin-ring2 {
+  0%   { opacity: 0; transform: scale(0.38); }
+  18%  { opacity: 0.35; }
+  100% { opacity: 0; transform: scale(2.8); }
+}
+@keyframes scin-amb {
+  0%   { opacity: 0; }
+  35%  { opacity: 1; }
+  65%  { opacity: 0.85; }
+  100% { opacity: 0.45; }
+}
+@keyframes scin-sweep {
+  0%   { transform: translateX(-260%) skewX(-14deg); opacity: 0; }
+  7%   { opacity: 1; }
+  92%  { opacity: 0.65; }
+  100% { transform: translateX(360%) skewX(-14deg); opacity: 0; }
+}
+@keyframes scin-wordmark {
+  0%   { opacity: 0; transform: translateY(22px); letter-spacing: 0.35em; }
+  100% { opacity: 1; transform: translateY(0);   letter-spacing: 0.08em; }
+}
+@keyframes scin-tag {
+  0%   { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 0.42; transform: translateY(0); }
+}
+@keyframes scin-exit {
+  0%   { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.94); }
+}
+@keyframes scin-scanline {
+  0%   { background-position: 0 0; }
+  100% { background-position: 0 100px; }
+}
+`;
+
 export function SendoraBrandIntro({ onComplete }: Props) {
   const [reduceMotion, setReduceMotion] = useState(false);
-  const [exit, setExit] = useState(false);
-  const [ready, setReady] = useState(false);
-  const completeRef = useRef(false);
-  const path1Ref = useRef<SVGPathElement>(null);
-  const path2Ref = useRef<SVGPathElement>(null);
-  const path3Ref = useRef<SVGPathElement>(null);
+  const [exiting, setExiting]           = useState(false);
+  const doneRef                         = useRef(false);
 
   const finish = useCallback(() => {
-    if (completeRef.current) return;
-    completeRef.current = true;
+    if (doneRef.current) return;
+    doneRef.current = true;
     onComplete();
   }, [onComplete]);
 
-  const scheduleFinish = useCallback(() => {
-    if (completeRef.current) return;
-    setExit(true);
-    window.setTimeout(finish, 280);
+  const beginExit = useCallback(() => {
+    if (doneRef.current) return;
+    setExiting(true);
+    window.setTimeout(finish, EXIT_DURATION_MS);
   }, [finish]);
 
   useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, []);
-
-  useEffect(() => {
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const mq   = window.matchMedia("(prefers-reduced-motion: reduce)");
     const sync = () => setReduceMotion(mq.matches);
     sync();
     mq.addEventListener("change", sync);
     return () => mq.removeEventListener("change", sync);
   }, []);
 
-  useLayoutEffect(() => {
-    if (reduceMotion) return;
-    const refs = [path1Ref, path2Ref, path3Ref];
-    for (const r of refs) {
-      const el = r.current;
-      if (!el) continue;
-      const len = el.getTotalLength();
-      el.style.setProperty("--sendora-len", String(len));
-    }
-    setReady(true);
-  }, [reduceMotion]);
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, []);
 
   useEffect(() => {
     if (reduceMotion) {
-      const t = window.setTimeout(finish, 120);
+      const t = window.setTimeout(finish, 80);
       return () => window.clearTimeout(t);
     }
 
-    const tComplete = window.setTimeout(scheduleFinish, COMPLETE_NORMAL_MS);
-    const tSafe = window.setTimeout(finish, FAILSAFE_MS);
+    const tNormal  = window.setTimeout(beginExit, INTRO_DURATION_MS);
+    const tFailsafe = window.setTimeout(finish,  FAILSAFE_MS);
 
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        window.clearTimeout(tComplete);
-        window.clearTimeout(tSafe);
+        window.clearTimeout(tNormal);
+        window.clearTimeout(tFailsafe);
         finish();
       }
     };
-
     window.addEventListener("keydown", onKey);
+
     return () => {
-      window.clearTimeout(tComplete);
-      window.clearTimeout(tSafe);
+      window.clearTimeout(tNormal);
+      window.clearTimeout(tFailsafe);
       window.removeEventListener("keydown", onKey);
     };
-  }, [reduceMotion, finish, scheduleFinish]);
+  }, [reduceMotion, beginExit, finish]);
 
   if (reduceMotion) {
     return (
       <div
-        className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-[var(--background)] px-6"
+        className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-black"
         role="status"
         aria-label="Welcome to Sendora"
       >
         <img
-          src="/sendora-logo.png"
-          alt=""
-          width={72}
-          height={72}
-          className="h-[72px] w-[72px] object-contain"
+          src="/sendora-logo-4k.png"
+          alt="Sendora"
+          width={110}
+          height={110}
+          style={{ mixBlendMode: "screen" }}
+          className="object-contain"
         />
-        <p className="mt-4 text-lg font-semibold tracking-tight text-[var(--foreground)]">
-          Sendora
+        <p className="mt-5 text-xl font-semibold tracking-widest text-white">
+          Welcome to Sendora
         </p>
       </div>
     );
   }
 
   return (
-    <div
-      className={`fixed inset-0 z-[200] flex flex-col items-center justify-center overflow-hidden bg-[radial-gradient(ellipse_120%_90%_at_50%_38%,#faf8ff_0%,#f2ecff_42%,#e8e0fc_100%)] px-6 transition-opacity duration-300 ease-out dark:bg-[radial-gradient(ellipse_120%_90%_at_50%_38%,#1e1b2e_0%,#17151f_50%,#13111f_100%)] ${exit ? "opacity-0" : "opacity-100"}`}
-      role="status"
-      aria-label="Sendora welcome animation. Press Escape to skip."
-    >
-      <button
-        type="button"
-        className="absolute bottom-6 left-1/2 z-10 -translate-x-1/2 rounded-full border border-[var(--border)] bg-[var(--card)]/90 px-4 py-2 text-xs font-medium text-[var(--muted)] shadow-sm backdrop-blur-sm transition-colors hover:border-[var(--accent)]/40 hover:text-[var(--accent)]"
-        onClick={finish}
-      >
-        Skip
-      </button>
-
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_42%,rgba(109,74,255,0.16)_0%,transparent_55%)] dark:bg-[radial-gradient(circle_at_50%_42%,rgba(109,74,255,0.22)_0%,transparent_55%)]" />
+    <>
+      <style dangerouslySetInnerHTML={{ __html: KEYFRAMES }} />
 
       <div
-        className={`relative flex w-full max-w-[220px] flex-col items-center ${ready ? "sendora-brand-intro--ready" : "opacity-0"}`}
+        role="status"
+        aria-label="Sendora welcome animation. Press Escape to skip."
+        style={{
+          animation: exiting
+            ? `scin-exit ${EXIT_DURATION_MS}ms cubic-bezier(0.4,0,1,1) forwards`
+            : undefined,
+        }}
+        className="fixed inset-0 z-[200] flex flex-col items-center justify-center overflow-hidden bg-black"
       >
-        <svg
-          viewBox="0 0 120 120"
-          className="h-[100px] w-[100px] shrink-0 sm:h-[120px] sm:w-[120px]"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          aria-hidden
+
+        {/* ── Subtle cinematic scanline texture ── */}
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage:
+              "repeating-linear-gradient(0deg, rgba(255,255,255,0.15) 0px, rgba(255,255,255,0.15) 1px, transparent 1px, transparent 3px)",
+            backgroundSize: "100% 3px",
+            animation: "scin-scanline 2s linear infinite",
+          }}
+        />
+
+        {/* ── Deep ambient background glow (blue-purple) ── */}
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse 70% 60% at 50% 50%, rgba(59,130,246,0.07) 0%, rgba(109,74,255,0.06) 35%, transparent 70%)",
+            animation: `scin-amb 1.8s cubic-bezier(0.4,0,0.2,1) forwards`,
+          }}
+        />
+
+        {/* ── Expanding glow rings ── */}
+        <div
+          className="pointer-events-none absolute"
+          style={{
+            width: 220,
+            height: 220,
+            borderRadius: "50%",
+            border: "1.5px solid rgba(109,74,255,0.55)",
+            boxShadow: "0 0 40px 8px rgba(109,74,255,0.2), inset 0 0 20px rgba(109,74,255,0.1)",
+            animation: `scin-ring1 1.15s 0.12s cubic-bezier(0.16,1,0.3,1) forwards`,
+            opacity: 0,
+          }}
+        />
+        <div
+          className="pointer-events-none absolute"
+          style={{
+            width: 200,
+            height: 200,
+            borderRadius: "50%",
+            border: "1px solid rgba(59,130,246,0.45)",
+            boxShadow: "0 0 30px 4px rgba(59,130,246,0.15)",
+            animation: `scin-ring2 1.3s 0.28s cubic-bezier(0.16,1,0.3,1) forwards`,
+            opacity: 0,
+          }}
+        />
+
+        {/* ── Main content stack ── */}
+        <div className="relative flex flex-col items-center">
+
+          {/* Logo + sweep overlay */}
+          <div className="relative" style={{ width: 140, height: 140 }}>
+
+            {/* Actual logo — mix-blend-mode: screen makes the black bg transparent */}
+            <img
+              src="/sendora-logo-4k.png"
+              alt="Sendora"
+              width={140}
+              height={140}
+              style={{
+                mixBlendMode: "screen",
+                objectFit: "contain",
+                width: "100%",
+                height: "100%",
+                animation: "scin-logo 0.9s cubic-bezier(0.16,1,0.3,1) forwards",
+                opacity: 0,
+              }}
+            />
+
+            {/* Light sweep — clipped to logo bounds */}
+            <div
+              className="pointer-events-none absolute inset-0 overflow-hidden"
+              style={{ borderRadius: 4 }}
+            >
+              <div
+                style={{
+                  position: "absolute",
+                  inset: "-20% 0",
+                  width: "55%",
+                  background:
+                    "linear-gradient(to right, transparent 0%, rgba(255,255,255,0.45) 45%, rgba(255,255,255,0.6) 50%, rgba(255,255,255,0.45) 55%, transparent 100%)",
+                  animation: `scin-sweep 0.72s 0.68s cubic-bezier(0.4,0,0.2,1) forwards`,
+                  opacity: 0,
+                }}
+              />
+            </div>
+          </div>
+
+          {/* "Welcome to Sendora" */}
+          <h1
+            className="mt-9 text-center text-white font-light"
+            style={{
+              fontSize: "clamp(1.1rem, 4vw, 1.6rem)",
+              letterSpacing: "0.08em",
+              animation: `scin-wordmark 0.7s 0.85s cubic-bezier(0.16,1,0.3,1) forwards`,
+              opacity: 0,
+            }}
+          >
+            Welcome to <span style={{ fontWeight: 600 }}>Sendora</span>
+          </h1>
+
+          {/* Tagline */}
+          <p
+            className="mt-2 text-center text-white/40 text-xs sm:text-sm font-light"
+            style={{
+              letterSpacing: "0.2em",
+              textTransform: "uppercase",
+              animation: `scin-tag 0.55s 1.2s ease-out forwards`,
+              opacity: 0,
+            }}
+          >
+            Your private inbox
+          </p>
+        </div>
+
+        {/* ── Skip button ── */}
+        <button
+          type="button"
+          onClick={finish}
+          className="absolute bottom-7 left-1/2 -translate-x-1/2 rounded-full border border-white/10 bg-white/5 px-5 py-2 text-xs font-medium text-white/40 backdrop-blur-sm transition-all hover:border-white/20 hover:text-white/70"
         >
-          <defs>
-            <linearGradient
-              id="sendoraIntroGrad"
-              x1="0"
-              y1="120"
-              x2="120"
-              y2="0"
-              gradientUnits="userSpaceOnUse"
-            >
-              <stop offset="0%" stopColor="#2563eb">
-                <animate
-                  attributeName="stop-color"
-                  values="#1d4ed8;#5b21b6;#0891b2;#1d4ed8"
-                  dur="2.4s"
-                  repeatCount="1"
-                  fill="freeze"
-                />
-              </stop>
-              <stop offset="52%" stopColor="#6d4aff">
-                <animate
-                  attributeName="stop-color"
-                  values="#7c3aed;#6366f1;#a78bfa;#7c3aed"
-                  dur="2.4s"
-                  repeatCount="1"
-                  fill="freeze"
-                />
-              </stop>
-              <stop offset="100%" stopColor="#22d3ee">
-                <animate
-                  attributeName="stop-color"
-                  values="#06b6d4;#6d4aff;#3b82f6;#06b6d4"
-                  dur="2.4s"
-                  repeatCount="1"
-                  fill="freeze"
-                />
-              </stop>
-            </linearGradient>
-            <filter
-              id="sendoraIntroSoftGlow"
-              x="-35%"
-              y="-35%"
-              width="170%"
-              height="170%"
-            >
-              <feGaussianBlur stdDeviation="1.6" result="b" />
-              <feMerge>
-                <feMergeNode in="b" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-          </defs>
-
-          <path
-            ref={path1Ref}
-            d="M 14 76 C 14 38, 40 18, 60 32 C 76 44, 92 36, 100 24"
-            className="sendora-brand-intro__path sendora-brand-intro__path--1"
-            stroke="url(#sendoraIntroGrad)"
-            strokeWidth="5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            filter="url(#sendoraIntroSoftGlow)"
-          />
-
-          <path
-            ref={path2Ref}
-            d="M 24 94 C 42 110, 66 104, 82 80 C 94 62, 104 52, 108 42"
-            className="sendora-brand-intro__path sendora-brand-intro__path--2"
-            stroke="url(#sendoraIntroGrad)"
-            strokeWidth="5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            filter="url(#sendoraIntroSoftGlow)"
-          />
-
-          <path
-            ref={path3Ref}
-            d="M 52 46 L 60 56 L 68 46"
-            className="sendora-brand-intro__path sendora-brand-intro__path--3"
-            stroke="url(#sendoraIntroGrad)"
-            strokeWidth="3.25"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-
-        <h1 className="sendora-brand-intro__wordmark mt-7 text-center text-[1.35rem] font-semibold tracking-tight text-[var(--foreground)] sm:text-[1.5rem]">
-          Sendora
-        </h1>
-        <p className="sendora-brand-intro__tag mt-1.5 text-center text-xs font-medium text-[var(--muted)]">
-          Your private inbox
-        </p>
+          Skip
+        </button>
       </div>
-    </div>
+    </>
   );
 }
