@@ -845,7 +845,7 @@ export function LandingPage() {
             <nav className="flex flex-col gap-3">
               {[
                 { label: "About", href: "/about" },
-                { label: "Contact", href: "mailto:support@sendora.me" },
+                { label: "Contact", href: "/contact" },
                 { label: "Privacy Policy", href: "/privacy-policy" },
                 { label: "Terms & Conditions", href: "/terms" },
                 { label: "Security", href: "#security" },
