@@ -2,19 +2,55 @@
 
 import { useRef, useEffect, useCallback } from "react";
 
-const ROW_ONE = [
-  "Apple", "Amazon", "Meta", "Netflix", "Adobe", "IBM", "Intel", "Oracle",
-  "PayPal", "Stripe", "Visa", "Mastercard", "Amex", "Goldman Sachs",
-  "Morgan Stanley", "HDFC Bank", "ICICI Bank", "Axis Bank",
-  "Walmart", "Flipkart", "Shopify", "eBay", "Alibaba", "Dropbox",
+interface Brand {
+  name: string;
+  slug: string;
+}
+
+const ROW_ONE: Brand[] = [
+  { name: "Apple", slug: "apple" },
+  { name: "Amazon", slug: "amazon" },
+  { name: "Meta", slug: "meta" },
+  { name: "Netflix", slug: "netflix" },
+  { name: "Adobe", slug: "adobe" },
+  { name: "Microsoft", slug: "microsoft" },
+  { name: "Google", slug: "google" },
+  { name: "IBM", slug: "ibm" },
+  { name: "Oracle", slug: "oracle" },
+  { name: "PayPal", slug: "paypal" },
+  { name: "Stripe", slug: "stripe" },
+  { name: "Visa", slug: "visa" },
+  { name: "Mastercard", slug: "mastercard" },
+  { name: "Walmart", slug: "walmart" },
+  { name: "Shopify", slug: "shopify" },
+  { name: "eBay", slug: "ebay" },
+  { name: "Alibaba", slug: "alibaba" },
+  { name: "Dropbox", slug: "dropbox" },
+  { name: "Salesforce", slug: "salesforce" },
+  { name: "Flipkart", slug: "flipkart" },
 ];
 
-const ROW_TWO = [
-  "Slack", "Zoom", "LinkedIn", "YouTube", "Snapchat", "Pinterest",
-  "McDonald's", "Starbucks", "Domino's", "KFC", "Zomato",
-  "Airtel", "Jio", "Vodafone", "Tata Play", "Sony",
-  "Max Life", "LIC", "Bajaj Finserv", "Reliance", "Tata Group",
-  "Nike", "Adidas", "Puma", "Samsung", "L'Oréal",
+const ROW_TWO: Brand[] = [
+  { name: "Slack", slug: "slack" },
+  { name: "Zoom", slug: "zoom" },
+  { name: "LinkedIn", slug: "linkedin" },
+  { name: "YouTube", slug: "youtube" },
+  { name: "Spotify", slug: "spotify" },
+  { name: "Snapchat", slug: "snapchat" },
+  { name: "Pinterest", slug: "pinterest" },
+  { name: "Samsung", slug: "samsung" },
+  { name: "Sony", slug: "sony" },
+  { name: "Nike", slug: "nike" },
+  { name: "Adidas", slug: "adidas" },
+  { name: "Puma", slug: "puma" },
+  { name: "Figma", slug: "figma" },
+  { name: "GitHub", slug: "github" },
+  { name: "Airtel", slug: "airtel" },
+  { name: "Vodafone", slug: "vodafone" },
+  { name: "Zomato", slug: "zomato" },
+  { name: "Starbucks", slug: "starbucks" },
+  { name: "McDonald's", slug: "mcdonalds" },
+  { name: "X", slug: "x" },
 ];
 
 const SPEED = 0.45;
@@ -23,7 +59,7 @@ function MarqueeRow({
   brands,
   direction,
 }: {
-  brands: string[];
+  brands: Brand[];
   direction: "left" | "right";
 }) {
   const trackRef = useRef<HTMLDivElement>(null);
@@ -93,7 +129,7 @@ function MarqueeRow({
     <div className="overflow-hidden w-full select-none">
       <div
         ref={trackRef}
-        className="flex items-center gap-4 w-max will-change-transform"
+        className="flex items-center gap-6 w-max will-change-transform"
         style={{ cursor: "grab" }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
@@ -102,12 +138,27 @@ function MarqueeRow({
       >
         {tripled.map((brand, i) => (
           <div
-            key={`${brand}-${i}`}
-            className="group flex-shrink-0 flex items-center justify-center px-7 py-3.5 rounded-2xl border border-[#ede9f8] bg-white shadow-sm hover:shadow-md hover:border-[#c4b5fd] transition-all duration-300 h-14"
+            key={`${brand.slug}-${i}`}
+            className="group flex-shrink-0 flex items-center justify-center w-28 h-14 rounded-2xl border border-[#ede9f8] bg-white shadow-sm hover:shadow-md hover:border-[#c4b5fd] transition-all duration-300"
           >
-            <span className="text-[13px] font-semibold tracking-wide text-[#9896b4] group-hover:text-[#6d4aff] transition-colors duration-300 whitespace-nowrap pointer-events-none">
-              {brand}
-            </span>
+            <img
+              src={`https://cdn.simpleicons.org/${brand.slug}`}
+              alt={brand.name}
+              draggable={false}
+              className="pointer-events-none h-6 w-auto max-w-[72px] object-contain"
+              style={{
+                filter: "grayscale(100%) brightness(0) opacity(0.28)",
+                transition: "filter 0.3s ease",
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLImageElement).style.filter =
+                  "grayscale(0%) brightness(1) opacity(0.85)";
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLImageElement).style.filter =
+                  "grayscale(100%) brightness(0) opacity(0.28)";
+              }}
+            />
           </div>
         ))}
       </div>
@@ -135,7 +186,7 @@ export function BrandsMarquee() {
         </div>
       </div>
 
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-5">
         <MarqueeRow brands={ROW_ONE} direction="left" />
         <MarqueeRow brands={ROW_TWO} direction="right" />
       </div>
