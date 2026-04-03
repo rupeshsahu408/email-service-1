@@ -371,6 +371,11 @@ export function LandingPage() {
               Globally trusted
             </div>
 
+            {/* Brand statement */}
+            <p className="mb-10 text-[13px] sm:text-sm font-medium tracking-[0.18em] uppercase text-white/30">
+              Built in India.&nbsp;&nbsp;Designed for the World.
+            </p>
+
             {/* Big counter */}
             <div className="flex items-center justify-center gap-3 sm:gap-4">
               <p className="text-5xl sm:text-7xl lg:text-8xl font-extrabold tracking-tight">
