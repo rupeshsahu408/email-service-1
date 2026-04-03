@@ -1,0 +1,88 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f3f0fd;
+  --foreground: #1c1b33;
+  --muted: #65637e;
+  --accent: #6d4aff;
+  --accent-soft: #ede8ff;
+  --border: #e8e4f8;
+  --card: #ffffff;
+  --sidebar-bg: #1c1b33;
+  --sidebar-text: #c5c3d8;
+  --sidebar-border: rgba(255,255,255,0.08);
+  --sidebar-hover: rgba(255,255,255,0.06);
+  --sidebar-active: rgba(109,74,255,0.25);
+}
+
+html.dark {
+  --background: #13111f;
+  --foreground: #e8e6f4;
+  --muted: #9896b4;
+  --accent-soft: rgba(109, 74, 255, 0.2);
+  --border: #2a2640;
+  --card: #1e1b2e;
+}
+
+html.dark body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+::selection {
+  background: rgba(109, 74, 255, 0.18);
+  color: #1c1b33;
+}
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes slide-down {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in-up { animation: fade-in-up 0.55s ease-out forwards; }
+.animate-fade-in { animation: fade-in 0.4s ease-out forwards; }
+.animate-slide-down { animation: slide-down 0.2s ease-out forwards; }
+
+@keyframes sendora-plans-shimmer {
+  0% { transform: translateX(-140%); opacity: 0; }
+  18% { opacity: 1; }
+  55% { transform: translateX(340%); opacity: 0.9; }
+  100% { transform: translateX(340%); opacity: 0; }
+}
+
+@keyframes sendora-plans-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 208, 96, 0.0), 0 8px 18px -14px rgba(255, 193, 64, 0.55); }
+  50% { box-shadow: 0 0 0 4px rgba(255, 208, 96, 0.12), 0 10px 22px -14px rgba(255, 193, 64, 0.75); }
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(109,74,255,0.2); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(109,74,255,0.4); }
+
+.prose img { max-width: 100%; }

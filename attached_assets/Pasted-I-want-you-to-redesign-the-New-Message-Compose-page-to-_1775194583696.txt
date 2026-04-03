@@ -1,0 +1,60 @@
+I want you to redesign the “New Message / Compose” page to make it look much more professional, premium, and polished across all screen sizes — mobile, tablet, and desktop.
+
+My goal:
+The compose page should feel clean, modern, trustworthy, and high-end, like a premium email product. Right now it looks too basic. I want a much better UI and UX without changing the backend logic.
+
+Requirements:
+
+* Redesign the full compose / new message page
+* Make it visually premium, minimal, and modern
+* Improve spacing, alignment, typography, and hierarchy
+* The layout should feel polished and professional, not plain or crowded
+* Keep the interface easy to understand and smooth to use
+
+Responsive Design:
+
+* It must look excellent on mobile, tablet, and desktop
+* On desktop: balanced two-panel or well-structured compose layout
+* On tablet: adapt spacing and panel sizes properly
+* On mobile: stack everything cleanly with perfect spacing and touch-friendly controls
+* No broken alignment, overflow, cramped text, or awkward spacing on any screen size
+
+Compose Area Improvements:
+
+* Make the header cleaner and more premium
+* Improve the “From” section styling
+* Redesign the anonymous send area so it feels more elegant and easier to understand
+* Make the checkbox/toggle area much more polished
+* Improve the input fields: To, Cc, Bcc, Subject, and message body
+* Inputs should feel modern, soft, and premium
+* Better focus states, borders, padding, and typography
+* Make the empty state on the right side much more elegant and useful
+
+Design Direction:
+
+* Clean premium SaaS look
+* Soft shadows, subtle borders, refined spacing
+* Better visual hierarchy
+* Smooth hover/focus states
+* Rounded corners where needed
+* Consistent icon style
+* Use a refined color balance that matches the brand
+* Keep it minimal, not flashy
+
+UX Improvements:
+
+* Improve readability of all text
+* Make important actions more visible
+* Ensure the compose experience feels intuitive and smooth
+* Keep all controls accessible and touch-friendly
+* Make the message writing area comfortable and distraction-free
+
+Important:
+
+* Frontend only
+* Do not touch the backend
+* Do not change any existing backend logic
+* Do not break current functionality
+* Only improve the UI/UX and responsiveness
+
+Please redesign this page to feel like a real premium product, not a basic form. Share a first polished version for review before making any further large changes.

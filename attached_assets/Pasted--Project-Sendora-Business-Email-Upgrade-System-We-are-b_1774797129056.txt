@@ -1,0 +1,223 @@
+## 🟣 Project: Sendora Business Email Upgrade System
+
+We are building a **premium Business Email system** inside Sendora.
+
+The goal is to provide:
+
+* Custom domain emails
+* Verified business identity (Golden Tick)
+* Team email features
+* Fast and trusted email experience
+
+---
+
+## 🎯 Core Concept
+
+Sendora will have 2 user types:
+
+### 1. Free Users
+
+* Email format: `name@name.sendora.me`
+* Limited storage
+* No verification badge
+
+### 2. Business Users (Paid via Razorpay)
+
+* Custom domain email (e.g. `you@yourcompany.com`)
+* Golden Verified Tick
+* Multiple mailboxes
+* Team access
+* Higher storage
+* No Sendora branding
+
+---
+
+## 💳 Payment Integration (Razorpay)
+
+* Use Razorpay for subscription payments
+* Monthly plan (initial)
+* On successful payment:
+
+  * Upgrade user to "business"
+  * Set plan expiry (30 days)
+* Handle via webhook:
+
+  * payment.captured
+  * subscription.charged
+
+---
+
+## 🟡 Golden Tick Verification System
+
+Golden Tick is a **verified badge for business users only**
+
+### Conditions:
+
+* User must have active Business plan
+* Domain must be verified
+* Email must be active
+
+### Display:
+
+* Show golden tick icon next to email / sender name
+* Visible in:
+
+  * Inbox list
+  * Email view
+  * Profile section
+
+---
+
+## 🌐 Custom Domain Setup
+
+Allow user to:
+
+1. Add domain
+2. Show DNS records (MX, TXT)
+3. Verify domain
+4. Activate email
+
+Flow:
+
+* Input domain
+* Show DNS instructions
+* Check verification
+* Enable sending/receiving
+
+---
+
+## 👥 Team & Mailboxes
+
+Business users can:
+
+* Create multiple emails:
+
+  * info@
+  * support@
+  * team@
+* Add team members
+* Assign roles:
+
+  * Admin
+  * Member
+
+Permissions:
+
+* Read emails
+* Send emails
+* Manage settings (admin only)
+
+---
+
+## 📦 Storage System
+
+* Free: Limited storage (e.g. 1GB)
+* Business: Higher storage (10GB+)
+
+---
+
+## ⚡ Email Delivery
+
+* Optimize for inbox delivery
+* Reduce spam probability
+* Maintain sending reputation
+
+---
+
+## 🧾 Business Features
+
+* Custom email signatures (logo, links)
+* Filters and rules:
+
+  * auto reply
+  * auto forward
+  * labels
+* Basic analytics (optional later)
+
+---
+
+## 🖥️ UI / UX REQUIREMENTS
+
+### Sidebar:
+
+* Add **Golden “Upgrade” button**
+* Visible at all times
+
+### After Upgrade:
+
+* Show:
+
+  * “Business Plan Active”
+  * Expiry date
+
+---
+
+## 📄 Business Upgrade Page (Pricing Page)
+
+### Sections:
+
+1. Hero Section
+
+* Headline: Upgrade to Business Email
+* CTA: Start Business Plan
+
+2. Trust Section
+
+* Secure
+* Fast delivery
+* Reliable system
+
+3. Features Grid
+
+* Custom domain
+* Golden tick
+* Team inbox
+* Storage
+* Automation
+
+4. Golden Tick Highlight Section
+
+* Explain verified identity
+
+5. Pricing Section
+
+* Monthly plan
+
+6. Comparison Table (Free vs Business)
+
+7. FAQ
+
+8. Final CTA
+
+---
+
+## 🔐 Security & Trust
+
+* Secure authentication
+* Reliable email delivery
+* Payment security via Razorpay
+
+---
+
+## 🚀 Future Scope
+
+* Professional plan (later)
+* Advanced analytics
+* Business verification system
+
+---
+
+## 📌 Key Focus
+
+This is not just an email system.
+
+This is:
+👉 Professional identity platform
+👉 Verified business communication system
+👉 Trust-first email experience
+
+---
+
+End Goal:
+User should feel:
+“I am using a professional, trusted business email service.”

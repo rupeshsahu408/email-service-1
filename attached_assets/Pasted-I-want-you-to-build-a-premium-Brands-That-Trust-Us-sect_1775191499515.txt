@@ -1,0 +1,46 @@
+I want you to build a premium “Brands That Trust Us” section for my website exactly based on the reference design I shared earlier.
+
+This section must look clean, modern, minimal, and high-end (Apple-level premium feel). Pay close attention to spacing, typography, smoothness, and overall visual quality.
+
+Core Requirements:
+
+* Create a horizontal scrolling brand/logo showcase
+* Logos must move automatically in a smooth horizontal direction
+* The animation should be continuous and infinite (no visible breaks or jumps)
+* Users should also be able to drag, swipe, or scroll manually
+* Ensure ultra-smooth performance on both desktop and mobile
+* Add proper spacing between logos for a clean premium look
+* Keep animations subtle and elegant (no harsh or fast movement)
+* Add soft hover effects (slight scale or opacity), but keep it minimal
+* Fully responsive design
+
+Design Requirements:
+
+* Section title: “BRANDS THAT TRUST US”
+* Title should be bold, centered, and premium looking
+* Background should be clean (white or very light gradient)
+* Logos should be high-quality (SVG preferred)
+* Logos should be consistent in size and alignment
+* Maintain a balanced layout with good padding and margins
+
+Important Restrictions:
+
+* Frontend only
+* Do NOT touch or modify the backend
+* Do NOT connect to any database
+* Do NOT change any existing backend logic
+
+Brand List (use logos for all of these):
+Apple, Amazon, Meta, Netflix, Adobe, IBM, Intel, Oracle,
+PayPal, Stripe, Visa, Mastercard, American Express, Goldman Sachs, Morgan Stanley, HDFC Bank, ICICI Bank, Axis Bank,
+Walmart, Flipkart, Shopify, eBay, Alibaba,
+McDonald's, Starbucks, Domino’s, KFC, Zomato,
+Airtel, Jio, Vodafone, Tata Play, Sony,
+Max Life Insurance, LIC, Bajaj Finserv, Reliance, Tata Group,
+Nike, Adidas, Puma, Samsung, L’Oréal,
+Dropbox, Slack, Zoom, LinkedIn, YouTube, Snapchat, Pinterest
+
+Final Goal:
+The section should feel premium, trustworthy, and visually impressive, similar to top SaaS or startup landing pages. Smoothness and design quality are very important.
+
+Do not start implementation yet. I will share final frontend direction next.

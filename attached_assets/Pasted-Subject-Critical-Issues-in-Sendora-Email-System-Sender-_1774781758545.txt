@@ -1,0 +1,79 @@
+Subject: Critical Issues in Sendora Email System (Sender + Inbound Flow)
+
+Hi,
+
+We are currently building our email service Sendora, where each user should have their own mailbox (e.g., user@sendora.me).
+
+However, there are multiple critical issues in both sending and receiving emails that need to be fixed.
+
+Current Issues
+1. Incorrect Sender Identity
+Emails sent by users are still using a shared sender like:
+noreply@updates.sendora.me
+Instead, they should be sent as:
+${username}@sendora.me (e.g., sahu@sendora.me)
+
+👉 This indicates the system is still using a shared sender instead of a per-user mailbox identity.
+
+2. Replies Are Not Being Received
+When a recipient replies to an email, the reply does not appear in the user’s inbox inside Sendora.
+
+👉 This suggests that the inbound email handling (webhook/MX routing) is not working correctly.
+
+3. External Emails Are Not Delivered
+Emails sent from external providers (Gmail, Outlook, etc.) to:
+user@sendora.me
+are not showing up in the user’s inbox.
+
+👉 This means incoming mail routing is either misconfigured or not implemented properly.
+
+4. Incorrect Email Authentication / Headers
+
+Current email headers show:
+
+mailed-by: send.updates.sendora.me
+signed-by: updates.sendora.me
+
+Expected:
+
+mailed-by: sendora.me
+signed-by: sendora.me
+
+👉 This indicates SPF/DKIM/domain authentication is not correctly configured for sendora.me.
+
+Expected Behavior
+
+Emails sent by a user should appear as:
+
+From: Name <user@sendora.me>
+Replies to that email should be received and stored in the same user’s inbox.
+External emails sent to user@sendora.me should be delivered and visible in the inbox.
+Email headers should reflect the correct domain (sendora.me) with proper authentication.
+Key Areas to Fix
+
+Please review and fix the following:
+
+Sender Logic
+Use dynamic sender:
+${displayName} <${username}@sendora.me>
+Remove shared sender for user emails
+Domain Authentication
+Properly configure SPF, DKIM, and DMARC for sendora.me
+Inbound Email Flow
+Ensure MX records are correctly set
+Verify inbound/webhook is receiving emails
+Map recipient (user@sendora.me) → correct user
+Store inbound emails in DB
+Inbox Rendering
+Ensure saved inbound emails are fetched and displayed correctly
+Internal Delivery (Sendora → Sendora)
+Ensure emails between Sendora users are delivered reliably (preferably directly via DB)
+Summary
+
+The system is currently:
+
+❌ Not sending emails using the user’s identity
+❌ Not receiving replies
+❌ Not receiving external emails
+
+We need to fix both outbound sender identity and inbound email handling to make the system fully functional.
