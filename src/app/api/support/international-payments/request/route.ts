@@ -80,11 +80,18 @@ export async function POST(request: NextRequest) {
   `.trim();
 
   async function sendWithFrom(from: string) {
-    return sendOutboundMail({ from, to, subject, text, html });
+    const result = await sendOutboundMail({ from, to, subject, text, html });
+    return result;
   }
 
   try {
-    await sendWithFrom(fromPrimary);
+    const result = await sendWithFrom(fromPrimary);
+    console.info("international-payments/request: sent", {
+      to,
+      from: fromPrimary,
+      subject,
+      resendEmailId: result.id,
+    });
     return NextResponse.json({ ok: true });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
@@ -97,7 +104,13 @@ export async function POST(request: NextRequest) {
         message: msg,
       });
       try {
-        await sendWithFrom(fromFallback);
+        const result = await sendWithFrom(fromFallback);
+        console.info("international-payments/request: sent (fallback from)", {
+          to,
+          from: fromFallback,
+          subject,
+          resendEmailId: result.id,
+        });
         return NextResponse.json({ ok: true });
       } catch (e2) {
         const msg2 = e2 instanceof Error ? e2.message : String(e2);
