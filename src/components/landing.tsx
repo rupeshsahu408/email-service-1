@@ -408,6 +408,91 @@ export function LandingPage() {
           </div>
         </section>
 
+        {/* ── Rating & Trust Badges ── */}
+        <section className="bg-white border-b border-[#ede9f8] px-6 py-12 sm:py-16">
+          <div className="mx-auto max-w-5xl flex flex-col items-center gap-10">
+
+            {/* Star rating */}
+            <div className="flex flex-col items-center gap-3">
+              <div className="flex items-center gap-1">
+                {[0,1,2,3,4].map((i) => (
+                  <svg key={i} viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5 text-[#f59e0b]">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  </svg>
+                ))}
+              </div>
+              <p className="text-[13px] font-semibold tracking-wide text-[#65637e]">
+                Rated <span className="text-[#1c1b33]">4.9 / 5</span> by our users
+              </p>
+            </div>
+
+            {/* Divider */}
+            <div className="w-full max-w-xs border-t border-[#ede9f8]" />
+
+            {/* Trust badges */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-8 w-full max-w-3xl">
+              {[
+                {
+                  icon: (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                    </svg>
+                  ),
+                  label: "Secure & Encrypted",
+                  sub: "End-to-end by default",
+                },
+                {
+                  icon: (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                      <circle cx="12" cy="12" r="10" />
+                      <polyline points="12 6 12 12 16 14" />
+                    </svg>
+                  ),
+                  label: "99.9% Uptime",
+                  sub: "Always-on infrastructure",
+                },
+                {
+                  icon: (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                      <rect x="2" y="4" width="20" height="16" rx="3" />
+                      <path d="m2 7 10 7 10-7" />
+                      <path d="M6 17l3-3" />
+                      <path d="M18 17l-3-3" />
+                    </svg>
+                  ),
+                  label: "No Spam Guarantee",
+                  sub: "Intelligent filtering",
+                },
+                {
+                  icon: (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                      <circle cx="9" cy="7" r="4" />
+                      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                    </svg>
+                  ),
+                  label: "24/7 Support",
+                  sub: "Real help, anytime",
+                },
+              ].map(({ icon, label, sub }) => (
+                <div
+                  key={label}
+                  className="group flex flex-col items-center gap-3 rounded-2xl border border-[#ede9f8] bg-white px-5 py-5 text-center hover:border-[#c4b5fd] hover:shadow-sm transition-all duration-300"
+                >
+                  <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#f3f0ff] text-[#6d4aff] group-hover:bg-[#6d4aff] group-hover:text-white transition-all duration-300">
+                    {icon}
+                  </div>
+                  <div>
+                    <p className="text-[13px] font-semibold text-[#1c1b33] leading-snug">{label}</p>
+                    <p className="mt-0.5 text-[11px] text-[#9896b4] leading-snug">{sub}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* ── Features ── */}
         <section id="features" className="px-6 py-20 sm:py-24 bg-[#f8f5ff]">
           <div className="mx-auto max-w-6xl">
