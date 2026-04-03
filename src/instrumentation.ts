@@ -506,6 +506,132 @@ export async function register() {
         await sql`CREATE UNIQUE INDEX IF NOT EXISTS user_api_access_tokens_hash_unique ON user_api_access_tokens(token_hash)`;
 
         await sql`
+          CREATE TABLE IF NOT EXISTS billing_subscriptions (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+            user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            product_type VARCHAR(32) NOT NULL,
+            "interval" VARCHAR(16) NOT NULL,
+            provider VARCHAR(32) NOT NULL DEFAULT 'razorpay',
+            provider_subscription_id VARCHAR(128) NOT NULL,
+            provider_plan_id VARCHAR(128),
+            status VARCHAR(32) NOT NULL DEFAULT 'created',
+            auto_renew BOOLEAN NOT NULL DEFAULT TRUE,
+            current_start_at TIMESTAMPTZ,
+            current_end_at TIMESTAMPTZ,
+            next_billing_at TIMESTAMPTZ,
+            cancel_at_cycle_end BOOLEAN NOT NULL DEFAULT FALSE,
+            cancelled_at TIMESTAMPTZ,
+            metadata JSONB,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+          )
+        `;
+        await sql`
+          ALTER TABLE billing_subscriptions
+            ADD COLUMN IF NOT EXISTS user_id UUID,
+            ADD COLUMN IF NOT EXISTS product_type VARCHAR(32),
+            ADD COLUMN IF NOT EXISTS "interval" VARCHAR(16),
+            ADD COLUMN IF NOT EXISTS provider VARCHAR(32) DEFAULT 'razorpay',
+            ADD COLUMN IF NOT EXISTS provider_subscription_id VARCHAR(128),
+            ADD COLUMN IF NOT EXISTS provider_plan_id VARCHAR(128),
+            ADD COLUMN IF NOT EXISTS status VARCHAR(32) DEFAULT 'created',
+            ADD COLUMN IF NOT EXISTS auto_renew BOOLEAN DEFAULT TRUE,
+            ADD COLUMN IF NOT EXISTS current_start_at TIMESTAMPTZ,
+            ADD COLUMN IF NOT EXISTS current_end_at TIMESTAMPTZ,
+            ADD COLUMN IF NOT EXISTS next_billing_at TIMESTAMPTZ,
+            ADD COLUMN IF NOT EXISTS cancel_at_cycle_end BOOLEAN DEFAULT FALSE,
+            ADD COLUMN IF NOT EXISTS cancelled_at TIMESTAMPTZ,
+            ADD COLUMN IF NOT EXISTS metadata JSONB,
+            ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW(),
+            ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW()
+        `;
+        await sql`
+          UPDATE billing_subscriptions
+          SET provider_subscription_id = 'legacy-' || id::text
+          WHERE provider_subscription_id IS NULL
+        `;
+        await sql`
+          ALTER TABLE billing_subscriptions
+            ALTER COLUMN provider_subscription_id SET NOT NULL
+        `;
+        await sql`
+          DO $$
+          BEGIN
+            IF NOT EXISTS (
+              SELECT 1 FROM pg_constraint
+              WHERE conname = 'billing_subscriptions_user_id_users_id_fk'
+            ) THEN
+              ALTER TABLE billing_subscriptions
+                ADD CONSTRAINT billing_subscriptions_user_id_users_id_fk
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+            END IF;
+          END $$
+        `;
+        await sql`CREATE UNIQUE INDEX IF NOT EXISTS billing_subscriptions_provider_sub_unique ON billing_subscriptions(provider_subscription_id)`;
+        await sql`CREATE INDEX IF NOT EXISTS billing_subscriptions_user_idx ON billing_subscriptions(user_id, created_at)`;
+        await sql`CREATE INDEX IF NOT EXISTS billing_subscriptions_status_idx ON billing_subscriptions(status, next_billing_at)`;
+        await sql`CREATE INDEX IF NOT EXISTS billing_subscriptions_product_idx ON billing_subscriptions(product_type, "interval")`;
+
+        await sql`
+          CREATE TABLE IF NOT EXISTS billing_payments (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+            user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            product_type VARCHAR(32) NOT NULL,
+            "interval" VARCHAR(16) NOT NULL,
+            provider VARCHAR(32) NOT NULL DEFAULT 'razorpay',
+            provider_payment_id VARCHAR(128) NOT NULL,
+            provider_order_id VARCHAR(128),
+            provider_subscription_id VARCHAR(128),
+            provider_plan_id VARCHAR(128),
+            amount INTEGER NOT NULL DEFAULT 0,
+            currency VARCHAR(16) NOT NULL DEFAULT 'INR',
+            status VARCHAR(32) NOT NULL,
+            captured_at TIMESTAMPTZ,
+            failed_reason TEXT,
+            metadata JSONB,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+          )
+        `;
+        await sql`
+          ALTER TABLE billing_payments
+            ADD COLUMN IF NOT EXISTS user_id UUID,
+            ADD COLUMN IF NOT EXISTS product_type VARCHAR(32),
+            ADD COLUMN IF NOT EXISTS "interval" VARCHAR(16),
+            ADD COLUMN IF NOT EXISTS provider VARCHAR(32) DEFAULT 'razorpay',
+            ADD COLUMN IF NOT EXISTS provider_payment_id VARCHAR(128),
+            ADD COLUMN IF NOT EXISTS provider_order_id VARCHAR(128),
+            ADD COLUMN IF NOT EXISTS provider_subscription_id VARCHAR(128),
+            ADD COLUMN IF NOT EXISTS provider_plan_id VARCHAR(128),
+            ADD COLUMN IF NOT EXISTS amount INTEGER DEFAULT 0,
+            ADD COLUMN IF NOT EXISTS currency VARCHAR(16) DEFAULT 'INR',
+            ADD COLUMN IF NOT EXISTS status VARCHAR(32),
+            ADD COLUMN IF NOT EXISTS captured_at TIMESTAMPTZ,
+            ADD COLUMN IF NOT EXISTS failed_reason TEXT,
+            ADD COLUMN IF NOT EXISTS metadata JSONB,
+            ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW(),
+            ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW()
+        `;
+        await sql`
+          DO $$
+          BEGIN
+            IF NOT EXISTS (
+              SELECT 1 FROM pg_constraint
+              WHERE conname = 'billing_payments_user_id_users_id_fk'
+            ) THEN
+              ALTER TABLE billing_payments
+                ADD CONSTRAINT billing_payments_user_id_users_id_fk
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+            END IF;
+          END $$
+        `;
+        await sql`CREATE UNIQUE INDEX IF NOT EXISTS billing_payments_provider_payment_unique ON billing_payments(provider_payment_id)`;
+        await sql`CREATE INDEX IF NOT EXISTS billing_payments_user_idx ON billing_payments(user_id, created_at)`;
+        await sql`CREATE INDEX IF NOT EXISTS billing_payments_status_idx ON billing_payments(status, captured_at)`;
+        await sql`CREATE INDEX IF NOT EXISTS billing_payments_product_idx ON billing_payments(product_type, "interval")`;
+        await sql`CREATE INDEX IF NOT EXISTS billing_payments_subscription_idx ON billing_payments(provider_subscription_id)`;
+
+        await sql`
           ALTER TABLE messages
             ADD COLUMN IF NOT EXISTS priority VARCHAR(16) NOT NULL DEFAULT 'normal',
             ADD COLUMN IF NOT EXISTS assigned_to_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
