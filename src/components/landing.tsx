@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 
 const domain = process.env.NEXT_PUBLIC_EMAIL_DOMAIN ?? "auramail.app";
@@ -123,8 +123,47 @@ const plans = [
   },
 ];
 
+function useCountUp(target: number, duration = 2200, startOnMount = false) {
+  const [count, setCount] = useState(0);
+  const [started, setStarted] = useState(startOnMount);
+  const ref = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (!startOnMount) {
+      const observer = new IntersectionObserver(
+        ([entry]) => { if (entry.isIntersecting) setStarted(true); },
+        { threshold: 0.3 }
+      );
+      if (ref.current) observer.observe(ref.current);
+      return () => observer.disconnect();
+    }
+  }, [startOnMount]);
+
+  useEffect(() => {
+    if (!started) return;
+    const startTime = performance.now();
+    const frame = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 4);
+      setCount(Math.floor(eased * target));
+      if (progress < 1) requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+  }, [started, target, duration]);
+
+  return { count, ref };
+}
+
+const trustStats = [
+  { value: "99.9%", label: "Uptime SLA" },
+  { value: "150+", label: "Countries Served" },
+  { value: "< 1s", label: "Avg. Delivery Time" },
+];
+
 export function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { count, ref: trustRef } = useCountUp(25);
 
   return (
     <div className="flex flex-col min-h-screen bg-white text-[#1c1b33]">
@@ -311,6 +350,52 @@ export function LandingPage() {
                 <span>{text}</span>
               </div>
             ))}
+          </div>
+        </section>
+
+        {/* ── User Trust / Social Proof ── */}
+        <section ref={trustRef} className="relative overflow-hidden bg-[#0e0c22] px-6 py-16 sm:py-20">
+          {/* Ambient glow blobs */}
+          <div className="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 w-[700px] h-[300px] rounded-full bg-[#6d4aff]/20 blur-[120px]" />
+          <div className="pointer-events-none absolute bottom-0 left-1/4 w-[300px] h-[200px] rounded-full bg-[#a78bfa]/10 blur-[80px]" />
+          <div className="pointer-events-none absolute bottom-0 right-1/4 w-[300px] h-[200px] rounded-full bg-[#818cf8]/10 blur-[80px]" />
+
+          <div className="relative mx-auto max-w-5xl text-center">
+            {/* Badge */}
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#6d4aff]/30 bg-[#6d4aff]/10 px-4 py-1.5 text-xs font-semibold text-[#a78bfa] tracking-widest uppercase mb-8">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#a78bfa] animate-pulse" />
+              Globally trusted
+            </div>
+
+            {/* Big counter */}
+            <div className="flex items-center justify-center gap-3 sm:gap-4">
+              <p className="text-5xl sm:text-7xl lg:text-8xl font-extrabold tracking-tight">
+                <span className="bg-gradient-to-r from-[#a78bfa] via-[#818cf8] to-[#6d4aff] bg-clip-text text-transparent tabular-nums">
+                  {count}M+
+                </span>
+              </p>
+            </div>
+
+            {/* Label */}
+            <p className="mt-4 text-lg sm:text-2xl font-semibold text-white/90 tracking-tight">
+              Users Worldwide <span className="not-italic">🌍</span>
+            </p>
+            <p className="mt-3 mx-auto max-w-md text-sm sm:text-base text-white/40 leading-relaxed">
+              Millions of people around the globe trust Sendora to keep their emails private, fast, and ad-free.
+            </p>
+
+            {/* Divider */}
+            <div className="mt-12 border-t border-white/[0.07]" />
+
+            {/* Supporting stats */}
+            <div className="mt-10 grid grid-cols-3 gap-4 sm:gap-8 max-w-lg mx-auto">
+              {trustStats.map(({ value, label }) => (
+                <div key={label} className="flex flex-col items-center gap-1">
+                  <span className="text-xl sm:text-2xl font-bold text-white">{value}</span>
+                  <span className="text-[11px] sm:text-xs text-white/40 text-center leading-snug">{label}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 
