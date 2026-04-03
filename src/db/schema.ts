@@ -135,6 +135,9 @@ export const billingSubscriptions = pgTable(
     autoRenew: boolean("auto_renew").notNull().default(true),
     currentStartAt: timestamp("current_start_at", { withTimezone: true }),
     currentEndAt: timestamp("current_end_at", { withTimezone: true }),
+    /** Legacy columns on some DBs; mirror Razorpay period (use `now` when period unknown). */
+    startAt: timestamp("start_at", { withTimezone: true }).notNull().defaultNow(),
+    endAt: timestamp("end_at", { withTimezone: true }),
     nextBillingAt: timestamp("next_billing_at", { withTimezone: true }),
     cancelAtCycleEnd: boolean("cancel_at_cycle_end").notNull().default(false),
     cancelledAt: timestamp("cancelled_at", { withTimezone: true }),

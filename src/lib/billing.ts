@@ -116,6 +116,8 @@ export async function upsertBillingSubscription(input: {
   const now = new Date();
   const autoRenew = input.autoRenew ?? true;
   const cancelAtCycleEnd = input.cancelAtCycleEnd ?? (input.autoRenew === false);
+  const periodStart = input.currentStartAt ?? now;
+  const periodEnd = input.currentEndAt ?? null;
 
   const values = {
     userId: input.userId,
@@ -128,6 +130,8 @@ export async function upsertBillingSubscription(input: {
     autoRenew,
     currentStartAt: input.currentStartAt ?? null,
     currentEndAt: input.currentEndAt ?? null,
+    startAt: periodStart,
+    endAt: periodEnd,
     nextBillingAt: input.nextBillingAt ?? null,
     cancelAtCycleEnd,
     cancelledAt: input.cancelledAt ?? null,
@@ -145,6 +149,8 @@ export async function upsertBillingSubscription(input: {
     autoRenew: values.autoRenew,
     currentStartAt: values.currentStartAt,
     currentEndAt: values.currentEndAt,
+    startAt: values.startAt,
+    endAt: values.endAt,
     nextBillingAt: values.nextBillingAt,
     cancelAtCycleEnd: values.cancelAtCycleEnd,
     cancelledAt: values.cancelledAt,

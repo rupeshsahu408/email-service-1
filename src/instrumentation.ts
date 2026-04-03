@@ -519,6 +519,8 @@ export async function register() {
             auto_renew BOOLEAN NOT NULL DEFAULT TRUE,
             current_start_at TIMESTAMPTZ,
             current_end_at TIMESTAMPTZ,
+            start_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            end_at TIMESTAMPTZ,
             next_billing_at TIMESTAMPTZ,
             cancel_at_cycle_end BOOLEAN NOT NULL DEFAULT FALSE,
             cancelled_at TIMESTAMPTZ,
@@ -540,12 +542,37 @@ export async function register() {
             ADD COLUMN IF NOT EXISTS auto_renew BOOLEAN DEFAULT TRUE,
             ADD COLUMN IF NOT EXISTS current_start_at TIMESTAMPTZ,
             ADD COLUMN IF NOT EXISTS current_end_at TIMESTAMPTZ,
+            ADD COLUMN IF NOT EXISTS start_at TIMESTAMPTZ DEFAULT NOW(),
+            ADD COLUMN IF NOT EXISTS end_at TIMESTAMPTZ,
             ADD COLUMN IF NOT EXISTS next_billing_at TIMESTAMPTZ,
             ADD COLUMN IF NOT EXISTS cancel_at_cycle_end BOOLEAN DEFAULT FALSE,
             ADD COLUMN IF NOT EXISTS cancelled_at TIMESTAMPTZ,
             ADD COLUMN IF NOT EXISTS metadata JSONB,
             ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW(),
             ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW()
+        `;
+        await sql`
+          UPDATE billing_subscriptions
+          SET start_at = COALESCE(start_at, current_start_at, created_at)
+          WHERE start_at IS NULL
+        `;
+        await sql`
+          UPDATE billing_subscriptions
+          SET end_at = COALESCE(end_at, current_end_at)
+          WHERE end_at IS NULL
+        `;
+        await sql`
+          UPDATE billing_subscriptions
+          SET start_at = COALESCE(created_at, NOW())
+          WHERE start_at IS NULL
+        `;
+        await sql`
+          ALTER TABLE billing_subscriptions
+            ALTER COLUMN start_at SET DEFAULT NOW()
+        `;
+        await sql`
+          ALTER TABLE billing_subscriptions
+            ALTER COLUMN start_at SET NOT NULL
         `;
         await sql`
           UPDATE billing_subscriptions
