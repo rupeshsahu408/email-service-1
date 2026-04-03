@@ -95,6 +95,47 @@ export function getIntervalFromSubscription(sub: {
   return "monthly";
 }
 
+function isPostgresUniqueViolation(e: unknown): boolean {
+  if (typeof e === "object" && e !== null && "code" in e) {
+    const code = String((e as { code: unknown }).code);
+    if (code === "23505") return true;
+  }
+  if (e instanceof Error && /duplicate key|unique constraint/i.test(e.message)) {
+    return true;
+  }
+  return false;
+}
+
+function subscriptionUpdateSet(input: {
+  userId: string;
+  productType: BillingProductType;
+  interval: BillingInterval;
+  providerPlanId?: string | null;
+  status: string;
+  autoRenew?: boolean;
+  currentStartAt?: Date | null;
+  currentEndAt?: Date | null;
+  nextBillingAt?: Date | null;
+  cancelledAt?: Date | null;
+  metadata?: Record<string, unknown>;
+}) {
+  return {
+    userId: input.userId,
+    productType: input.productType,
+    interval: input.interval,
+    providerPlanId: input.providerPlanId ?? null,
+    status: input.status,
+    autoRenew: input.autoRenew ?? true,
+    currentStartAt: input.currentStartAt ?? null,
+    currentEndAt: input.currentEndAt ?? null,
+    nextBillingAt: input.nextBillingAt ?? null,
+    cancelAtCycleEnd: input.autoRenew === false,
+    cancelledAt: input.cancelledAt ?? null,
+    metadata: input.metadata ?? {},
+    updatedAt: new Date(),
+  };
+}
+
 export async function upsertBillingSubscription(input: {
   userId: string;
   productType: BillingProductType;
@@ -110,9 +151,28 @@ export async function upsertBillingSubscription(input: {
   metadata?: Record<string, unknown>;
 }) {
   const db = getDb();
-  await db
-    .insert(billingSubscriptions)
-    .values({
+  const set = subscriptionUpdateSet(input);
+
+  // Prefer update/insert without ON CONFLICT: some deployments lack the unique index
+  // required for `onConflictDoUpdate`, which breaks Razorpay subscription creation.
+  const updated = await db
+    .update(billingSubscriptions)
+    .set(set)
+    .where(eq(billingSubscriptions.providerSubscriptionId, input.providerSubscriptionId))
+    .returning({ id: billingSubscriptions.id });
+
+  if (updated.length > 0) {
+    logInfo("billing_subscription_upserted", {
+      userId: input.userId,
+      productType: input.productType,
+      interval: input.interval,
+      status: input.status,
+    });
+    return;
+  }
+
+  try {
+    await db.insert(billingSubscriptions).values({
       userId: input.userId,
       productType: input.productType,
       interval: input.interval,
@@ -127,25 +187,18 @@ export async function upsertBillingSubscription(input: {
       cancelledAt: input.cancelledAt ?? null,
       metadata: input.metadata ?? {},
       updatedAt: new Date(),
-    })
-    .onConflictDoUpdate({
-      target: billingSubscriptions.providerSubscriptionId,
-      set: {
-        userId: input.userId,
-        productType: input.productType,
-        interval: input.interval,
-        providerPlanId: input.providerPlanId ?? null,
-        status: input.status,
-        autoRenew: input.autoRenew ?? true,
-        currentStartAt: input.currentStartAt ?? null,
-        currentEndAt: input.currentEndAt ?? null,
-        nextBillingAt: input.nextBillingAt ?? null,
-        cancelAtCycleEnd: input.autoRenew === false,
-        cancelledAt: input.cancelledAt ?? null,
-        metadata: input.metadata ?? {},
-        updatedAt: new Date(),
-      },
     });
+  } catch (e) {
+    if (isPostgresUniqueViolation(e)) {
+      await db
+        .update(billingSubscriptions)
+        .set(set)
+        .where(eq(billingSubscriptions.providerSubscriptionId, input.providerSubscriptionId));
+    } else {
+      throw e;
+    }
+  }
+
   logInfo("billing_subscription_upserted", {
     userId: input.userId,
     productType: input.productType,
