@@ -542,8 +542,14 @@ export function UpgradePage({
                     {loadingPlan === "business" ? "Processing…" : "Upgrade to Business"}
                   </button>
                 )}
-
-                <InternationalPaymentsRequest initialEmail={email} />
+                {!isBusiness && (
+                  <div className="mt-2">
+                    <InternationalPaymentsRequest
+                      initialEmail={email}
+                      variant="purpleOutline"
+                    />
+                  </div>
+                )}
               </div>
             </div>
 

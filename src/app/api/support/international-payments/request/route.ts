@@ -4,6 +4,7 @@ import { createHash } from "crypto";
 
 import { sendOutboundMail } from "@/lib/resend-mail";
 import { getEmailDomain } from "@/lib/constants";
+import { getAdminSystemSettings } from "@/lib/admin-system-settings";
 import { getClientIp, rateLimitRecoverySupportByKey } from "@/lib/rate-limit";
 
 const bodySchema = z.object({
@@ -49,7 +50,10 @@ export async function POST(request: NextRequest) {
   }
 
   const to = "mail-support.studyhelp@gmail.com";
-  const from = `Sendora <no-reply@${getEmailDomain()}>`;
+  const adminSettings = await getAdminSystemSettings();
+  const from = `${adminSettings.general.appName} <${
+    adminSettings.email.defaultSenderEmail || `no-reply@${getEmailDomain()}`
+  }>`;
   const subject = "[International Payments] Demand Request";
   const timestamp = new Date().toISOString();
 
@@ -77,11 +81,12 @@ export async function POST(request: NextRequest) {
   try {
     await sendOutboundMail({ from, to, subject, text, html });
     return NextResponse.json({ ok: true });
-  } catch {
-    return NextResponse.json(
-      { error: "Could not send support request" },
-      { status: 502 }
-    );
+  } catch (e) {
+    console.error("international-payments/request: send failed", {
+      message: e instanceof Error ? e.message : String(e),
+    });
+    const msg = e instanceof Error ? e.message : "Could not send support request";
+    return NextResponse.json({ error: msg }, { status: 502 });
   }
 }
 

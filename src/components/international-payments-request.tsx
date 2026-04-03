@@ -4,8 +4,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 export function InternationalPaymentsRequest({
   initialEmail,
+  variant = "default",
 }: {
   initialEmail: string;
+  variant?: "default" | "purpleOutline";
 }) {
   const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(false);
@@ -65,8 +67,9 @@ export function InternationalPaymentsRequest({
         }),
       });
 
-      if (!res.ok) {
-        const data = (await res.json().catch(() => ({}))) as { error?: string };
+      const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
+
+      if (!res.ok || data.ok !== true) {
         setSubmitError(data.error ?? "Could not submit request. Please try again.");
         setSubmitting(false);
         return;
@@ -122,7 +125,11 @@ export function InternationalPaymentsRequest({
       <button
         type="button"
         onClick={openModal}
-        className="w-full text-center text-sm font-semibold text-[#6d4aff] hover:text-[#5b3dff] underline decoration-[#6d4aff]/40 underline-offset-4"
+        className={
+          variant === "purpleOutline"
+            ? "w-full text-center rounded-full border border-white/60 bg-white/10 text-white/95 text-sm font-semibold py-2.5 px-4 hover:bg-white/20 hover:text-white transition-colors"
+            : "w-full text-center rounded-full border border-[#e8e4f8] bg-[#faf9fe] text-[#1c1b33] text-sm font-semibold py-2.5 px-4 hover:bg-white transition-colors"
+        }
       >
         🌍 Need International Payments?
       </button>
@@ -156,8 +163,9 @@ export function InternationalPaymentsRequest({
                 </h3>
                 {submitted ? (
                   <p className="mt-2 text-sm text-[#65637e]">
-                    Thanks! We’ve received your request for international payments. We’ll notify you as soon as
-                    it’s available 🌍
+                    Thanks! We’ve received your request for international payments.
+                    <br />
+                    We’ll notify you as soon as it’s available 🌍
                   </p>
                 ) : (
                   <p className="mt-2 text-sm text-[#65637e]">
