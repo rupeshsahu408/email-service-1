@@ -860,7 +860,7 @@ export function LandingPage() {
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/30">Resources</p>
             <nav className="flex flex-col gap-3">
               {[
-                { label: "Help Center", href: "#", badge: "" },
+                { label: "Help Center", href: "/help", badge: "" },
                 { label: "Blog", href: "#", badge: "Soon" },
                 { label: "Status", href: "#", badge: "Soon" },
               ].map(({ label, href, badge }) => (
