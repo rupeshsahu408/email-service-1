@@ -847,7 +847,7 @@ export function LandingPage() {
                 { label: "About", href: "#" },
                 { label: "Contact", href: "mailto:support@sendora.me" },
                 { label: "Privacy Policy", href: "/privacy-policy" },
-                { label: "Terms & Conditions", href: "#" },
+                { label: "Terms & Conditions", href: "/terms" },
                 { label: "Security", href: "#security" },
               ].map(({ label, href }) => (
                 <a key={label} href={href} className="text-[13px] text-white/45 hover:text-white/85 transition-colors w-fit">{label}</a>
