@@ -25,7 +25,7 @@ src/
     (root)/      - Landing page, login, signup, inbox UI
     admin/       - Admin dashboard
     api/         - API route handlers
-  components/    - React components (UI, admin, compose editor)
+  components/    - React components (UI, admin, compose editor, language-selector)
   db/            - Drizzle ORM schema and DB client
     schema.ts    - Source of truth for all DB tables
     index.ts     - DB connection singleton (getDb())

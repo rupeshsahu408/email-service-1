@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { BrandsMarquee } from "@/components/brands-marquee";
+import { LanguageProvider, useLanguage } from "@/components/language-context";
+import { LanguageSelector } from "@/components/language-selector";
 
 const domain = process.env.NEXT_PUBLIC_EMAIL_DOMAIN ?? "auramail.app";
 
@@ -229,8 +231,17 @@ const trustStats = [
 ];
 
 export function LandingPage() {
+  return (
+    <LanguageProvider>
+      <LandingPageInner />
+    </LanguageProvider>
+  );
+}
+
+function LandingPageInner() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { count, ref: trustRef } = useCountUp(25);
+  const { t } = useLanguage();
 
   return (
     <div className="flex flex-col min-h-screen bg-white text-[#1c1b33]">
@@ -243,19 +254,20 @@ export function LandingPage() {
             <span className="text-[15px] font-bold tracking-tight text-[#1c1b33]">Sendora</span>
           </div>
           <nav className="hidden md:flex items-center gap-7 text-[13px] font-medium text-[#65637e]">
-            <a href="#features" className="hover:text-[#6d4aff] transition-colors duration-200">Features</a>
-            <a href="#security" className="hover:text-[#6d4aff] transition-colors duration-200">Security</a>
-            <a href="#pricing" className="hover:text-[#6d4aff] transition-colors duration-200">Pricing</a>
+            <a href="#features" className="hover:text-[#6d4aff] transition-colors duration-200">{t.navFeatures}</a>
+            <a href="#security" className="hover:text-[#6d4aff] transition-colors duration-200">{t.navSecurity}</a>
+            <a href="#pricing" className="hover:text-[#6d4aff] transition-colors duration-200">{t.navPricing}</a>
           </nav>
           <div className="hidden md:flex items-center gap-3">
+            <LanguageSelector variant="navbar" />
             <Link href="/login" className="text-[13px] font-medium text-[#65637e] hover:text-[#6d4aff] transition-colors duration-200 px-1">
-              Sign in
+              {t.signIn}
             </Link>
             <Link
               href="/signup"
               className="rounded-full bg-[#6d4aff] px-5 py-2 text-[13px] font-semibold text-white shadow-md shadow-[#6d4aff]/25 hover:bg-[#5b3dff] hover:shadow-lg hover:shadow-[#6d4aff]/35 transition-all duration-200"
             >
-              Get started free
+              {t.getStarted}
             </Link>
           </div>
 
@@ -281,13 +293,14 @@ export function LandingPage() {
         {/* Mobile dropdown */}
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-[#e8e4f8] bg-white px-6 py-4 space-y-1">
-            <a href="#features" onClick={() => setMobileMenuOpen(false)} className="block py-2.5 text-sm font-medium text-[#65637e] hover:text-[#6d4aff] transition-colors">Features</a>
-            <a href="#security" onClick={() => setMobileMenuOpen(false)} className="block py-2.5 text-sm font-medium text-[#65637e] hover:text-[#6d4aff] transition-colors">Security</a>
-            <a href="#pricing" onClick={() => setMobileMenuOpen(false)} className="block py-2.5 text-sm font-medium text-[#65637e] hover:text-[#6d4aff] transition-colors">Pricing</a>
+            <a href="#features" onClick={() => setMobileMenuOpen(false)} className="block py-2.5 text-sm font-medium text-[#65637e] hover:text-[#6d4aff] transition-colors">{t.navFeatures}</a>
+            <a href="#security" onClick={() => setMobileMenuOpen(false)} className="block py-2.5 text-sm font-medium text-[#65637e] hover:text-[#6d4aff] transition-colors">{t.navSecurity}</a>
+            <a href="#pricing" onClick={() => setMobileMenuOpen(false)} className="block py-2.5 text-sm font-medium text-[#65637e] hover:text-[#6d4aff] transition-colors">{t.navPricing}</a>
             <div className="pt-3 border-t border-[#f0edfb] flex flex-col gap-2">
-              <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="block text-center py-2.5 text-sm font-semibold text-[#6d4aff] hover:bg-[#f3f0fd] rounded-xl transition-colors">Sign in</Link>
-              <Link href="/signup" onClick={() => setMobileMenuOpen(false)} className="block text-center rounded-full bg-[#6d4aff] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#5b3dff] transition-colors">Get started free</Link>
+              <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="block text-center py-2.5 text-sm font-semibold text-[#6d4aff] hover:bg-[#f3f0fd] rounded-xl transition-colors">{t.signIn}</Link>
+              <Link href="/signup" onClick={() => setMobileMenuOpen(false)} className="block text-center rounded-full bg-[#6d4aff] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#5b3dff] transition-colors">{t.getStarted}</Link>
             </div>
+            <LanguageSelector variant="mobile" />
           </div>
         )}
       </header>
