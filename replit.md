@@ -1,102 +1,78 @@
-# Sendora
+# Sendora — Privacy-First Email Platform
 
-A privacy-first, Proton Mail-inspired email web application built with Next.js 15.
+## Overview
 
-## Tech Stack
+Sendora is a full-featured Email Service Provider (ESP) and personal/business email management system built with Next.js. It provides custom domain management, temporary inboxes, AI-powered assistance, and subscription-based billing.
 
-- **Framework**: Next.js 15 (App Router, TypeScript)
-- **Styling**: Tailwind CSS v4 (via `@import "tailwindcss"`)
-- **Database**: Replit PostgreSQL via Drizzle ORM
-- **Email sending**: Resend API
-- **CAPTCHA**: Cloudflare Turnstile (bypassed in development)
-- **Rate limiting**: Upstash Redis
-- **Font**: Geist Sans / Geist Mono
-- **Dev server**: Port 5000, host 0.0.0.0
+## Architecture
 
-## Key Pages
+- **Framework**: Next.js 15+ (React 19) with App Router
+- **Database**: PostgreSQL (Replit built-in) via Drizzle ORM
+- **Email Delivery**: Resend API
+- **AI**: Google Gemini (gemini-2.5-flash-lite)
+- **Payments**: Razorpay
+- **Auth**: Custom session-based auth with Argon2 and WebAuthn/Passkey support
+- **Rate Limiting**: Upstash Redis + Ratelimit
+- **Bot Protection**: Cloudflare Turnstile
+- **Storage**: Cloudinary (attachments)
+- **UI**: Tailwind CSS 4, Lucide React, Tiptap rich-text editor
 
-| Route | Description |
-|-------|-------------|
-| `/` | Landing page (hero, features, pricing, CTA, footer) |
-| `/login` | Sign-in page |
-| `/signup` | 4-step registration wizard |
-| `/inbox` | Full 3-pane email client |
-| `/settings` | User settings (appearance, inbox, compose, security, etc.) |
-| `/upgrade` | Business plan upgrade page (8 sections, Razorpay checkout) |
+## Project Structure
 
-## Design System
+```
+src/
+  app/           - Next.js App Router pages and API routes
+    (root)/      - Landing page, login, signup, inbox UI
+    admin/       - Admin dashboard
+    api/         - API route handlers
+  components/    - React components (UI, admin, compose editor)
+  db/            - Drizzle ORM schema and DB client
+    schema.ts    - Source of truth for all DB tables
+    index.ts     - DB connection singleton (getDb())
+  lib/           - Business logic and third-party integrations
+scripts/         - DB maintenance scripts
+drizzle/         - SQL migration files
+```
 
-**Color palette (Proton Mail-inspired):**
-- Sidebar: `#1c1b33` (always dark, regardless of theme)
-- Accent: `#6d4aff` (purple)
-- Background: `#f3f0fd` (light lavender)
-- Foreground: `#1c1b33`
-- Muted: `#65637e`
-- Border: `#e8e4f8`
-- Card: `#ffffff`
+## Key Files
 
-CSS variables defined in `src/app/globals.css`. Dark mode toggled via `html.dark` class.
+- `src/db/schema.ts` — All database table definitions
+- `src/instrumentation.ts` — Startup DB schema bootstrap (auto-runs on start)
+- `src/lib/postgres-connection.ts` — Postgres connection options (handles local/cloud SSL)
+- `src/lib/resend-mail.ts` — Email delivery via Resend
+- `src/lib/gemini-json-client.ts` — Gemini AI integration
+- `src/lib/session.ts` — Session management with Replit-aware cookie security
+- `src/lib/app-url.ts` — App base URL resolution (supports Replit dev domain)
 
-## Key Components
+## Running the App
 
-- `src/components/inbox-client.tsx` — Main email UI: dark sidebar, message list, thread detail, floating compose panel
-- `src/components/landing.tsx` — Landing page: hero, features grid, security section, pricing, CTA, footer. Client component with mobile hamburger menu.
-- `src/components/login-form.tsx` — Split-screen login: dark left brand panel (desktop) + right form with show/hide password
-- `src/components/signup-wizard.tsx` — 5-step signup: username → captcha → password → recovery key → passkey. Split-screen layout with animated step sidebar.
-- `src/components/settings-client.tsx` — Full settings panel (10 sections)
-- `src/components/theme-provider.tsx` — Applies theme + accent color from settings API on navigation
+- **Dev**: `npm run dev` (port 5000)
+- **DB migrations**: Auto-runs on startup via `src/instrumentation.ts`
+- **Manual DB tools**: `npm run db:push`, `npm run db:migrate`, `npm run db:studio`
+- **Seed admin**: `npm run db:seed-admin`
 
-## API Routes
+## Environment Variables / Secrets
 
-All under `src/app/api/`:
-- `auth/login`, `auth/logout`, `auth/signup`, `auth/username` — Authentication
-- `mail/messages` — List + PATCH + DELETE messages
-- `mail/messages/[id]` — Single message detail
-- `mail/thread/[tid]` — Thread view
-- `mail/send` — Send email (JSON or multipart)
-- `mail/drafts` — GET/PUT draft
-- `mail/labels` — GET/POST labels
-- `mail/attachments/[id]` — Download attachment
-- `settings` — GET/PATCH user settings (includes billing info)
-- `resend/webhook` — Inbound mail webhook
-- `razorpay/create-subscription` — Create Razorpay subscription
-- `razorpay/verify` — Verify payment and upgrade plan
-- `razorpay/cancel-subscription` — Cancel active subscription (cancel_at_cycle_end)
-- `razorpay/webhook` — Handle Razorpay events (activated, charged, payment.failed, cancelled, halted)
+### Required (set as Replit Secrets)
+- `DATABASE_URL` — PostgreSQL connection string (auto-provided by Replit)
+- `SESSION_SECRET` — Secret for session signing
+- `RESEND_API_KEY` — Resend email delivery API key
+- `GEMINI_API_KEY` — Google Gemini AI API key
+- `RAZORPAY_KEY_ID` — Razorpay payment key ID
+- `RAZORPAY_KEY_SECRET` — Razorpay payment secret
+- `CLOUDINARY_*` — Cloudinary credentials for attachment storage
+- `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` — Rate limiting
+- `TURNSTILE_SECRET_KEY` — Cloudflare Turnstile bot protection
 
-## Database Schema
+### Optional
+- `NEXT_PUBLIC_APP_URL` — Override the public app URL for email links
+- `RAZORPAY_PLAN_ID` — Pre-set Razorpay plan ID (already configured as env var)
+- `SKIP_STARTUP_DB_BOOTSTRAP=1` — Skip DB auto-migration on startup
 
-Tables: `users`, `messages`, `messageLabelMap`, `labels`, `composeDrafts`, `attachments`, `userSettings`, `userSessions`
+## Replit-Specific Notes
 
-Message folders: `inbox | sent | trash | archive`
-
-User billing fields: `plan` (free|business), `planStatus` (free|active|past_due|cancelled), `planExpiresAt`, `razorpayOrderId`, `razorpaySubscriptionId`
-
-## Environment Secrets
-
-| Secret | Purpose |
-|--------|---------|
-| `DATABASE_URL` | Replit PostgreSQL (managed) |
-| `RESEND_API_KEY` | Outbound email via Resend |
-| `RESEND_WEBHOOK_SECRET` | Inbound mail webhook |
-| `EMAIL_DOMAIN` | Server-side email domain |
-| `NEXT_PUBLIC_EMAIL_DOMAIN` | Client-side domain display |
-| `TURNSTILE_SECRET_KEY` | Cloudflare Turnstile server secret |
-| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Turnstile widget site key |
-| `UPSTASH_REDIS_REST_URL` | Rate limiting |
-| `UPSTASH_REDIS_REST_TOKEN` | Rate limiting auth |
-| `RAZORPAY_KEY_ID` | Razorpay API key ID (server) |
-| `RAZORPAY_KEY_SECRET` | Razorpay API secret (server) |
-| `RAZORPAY_WEBHOOK_SECRET` | Razorpay webhook signature secret |
-| `NEXT_PUBLIC_RAZORPAY_KEY_ID` | Razorpay key for frontend checkout |
-| `RAZORPAY_PLAN_AMOUNT` | Plan amount in paise (default: 49900 = ₹499) |
-| `NEXT_PUBLIC_RAZORPAY_PLAN_DISPLAY_PRICE` | Display price e.g. "₹499" |
-
-## Development Notes
-
-- **Turnstile**: In `NODE_ENV=development`, site key is set to `""` so the widget is hidden; server validates `"dev-skip"` token automatically.
-- **Upstash URL fix**: `src/lib/rate-limit.ts` strips leading/trailing quotes from env vars.
-- **HMR**: `next.config.ts` sets `allowedDevOrigins` for Replit's proxied preview.
-- **Draft auto-save**: Compose form auto-saves every 900ms via `PUT /api/mail/drafts`.
-- **Inbox sidebar**: Always dark (`#1c1b33`), hardcoded — not affected by light/dark theme toggle.
-- **Migrations**: Run `npm run db:migrate` after pulling updates that add new tables/columns. This repo also has a startup DB bootstrap in `src/instrumentation.ts`, but it may not cover every Drizzle migration.
+- The Replit PostgreSQL host is `helium` (local, no SSL required)
+- `src/lib/postgres-connection.ts` has been updated to recognize `helium` as a local host
+- `src/lib/app-url.ts` uses `REPLIT_DEV_DOMAIN` for public URL resolution
+- `src/lib/session.ts` detects `REPLIT_DEV_DOMAIN` to set secure cookies in dev mode
+- `next.config.ts` uses `REPLIT_DEV_DOMAIN` for `allowedDevOrigins`

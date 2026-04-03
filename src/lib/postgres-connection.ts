@@ -19,10 +19,11 @@ export function isLikelyLocalPostgresUrl(url: string): boolean {
       host === "localhost" ||
       host === "127.0.0.1" ||
       host === "::1" ||
+      host === "helium" ||
       host.endsWith(".local")
     );
   } catch {
-    return /localhost|127\.0\.0\.1/i.test(url);
+    return /localhost|127\.0\.0\.1|helium/i.test(url);
   }
 }
 

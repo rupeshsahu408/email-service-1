@@ -6,6 +6,11 @@ export function getAppBaseUrl(): string {
   if (explicit) {
     return explicit.replace(/\/+$/, "");
   }
+  const replitDev = process.env.REPLIT_DEV_DOMAIN?.trim();
+  if (replitDev) {
+    const host = replitDev.replace(/^https?:\/\//, "");
+    return `https://${host}`;
+  }
   const vercel = process.env.VERCEL_URL?.trim();
   if (vercel) {
     const host = vercel.replace(/^https?:\/\//, "");

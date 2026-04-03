@@ -348,6 +348,27 @@ export async function register() {
         await sql`CREATE INDEX IF NOT EXISTS mailboxes_domain_idx ON mailboxes(domain_id)`;
 
         await sql`
+          CREATE TABLE IF NOT EXISTS scheduled_emails (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+            user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            to_addr TEXT NOT NULL DEFAULT '',
+            cc_addr TEXT NOT NULL DEFAULT '',
+            bcc_addr TEXT NOT NULL DEFAULT '',
+            subject TEXT NOT NULL DEFAULT '',
+            body_text TEXT NOT NULL DEFAULT '',
+            body_html TEXT NOT NULL DEFAULT '',
+            mailbox_id VARCHAR(128),
+            send_at TIMESTAMPTZ NOT NULL,
+            status VARCHAR(32) NOT NULL DEFAULT 'scheduled',
+            send_anonymously BOOLEAN NOT NULL DEFAULT FALSE,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            cancelled_at TIMESTAMPTZ
+          )
+        `;
+        await sql`CREATE INDEX IF NOT EXISTS scheduled_emails_user_send_idx ON scheduled_emails(user_id, send_at)`;
+        await sql`CREATE INDEX IF NOT EXISTS scheduled_emails_send_at_idx ON scheduled_emails(send_at)`;
+
+        await sql`
           ALTER TABLE messages
             ADD COLUMN IF NOT EXISTS sent_anonymously BOOLEAN NOT NULL DEFAULT FALSE
         `;
