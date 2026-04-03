@@ -6,6 +6,7 @@ import { sendOutboundMail } from "@/lib/resend-mail";
 import { getEmailDomain, getProfessionalRootDomain } from "@/lib/constants";
 import { getAdminSystemSettings } from "@/lib/admin-system-settings";
 import { getClientIp, rateLimitRecoverySupportByKey } from "@/lib/rate-limit";
+import { SUPPORT_INTERNATIONAL_PAYMENTS_EMAIL } from "@/lib/support-international-payments-email";
 
 const bodySchema = z.object({
   fullName: z.string().trim().min(1).max(100),
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const to = "mail-support.studyhelp@gmail.com";
+  const to = SUPPORT_INTERNATIONAL_PAYMENTS_EMAIL;
   const adminSettings = await getAdminSystemSettings();
   const fromPrimary = `${adminSettings.general.appName} <${
     adminSettings.email.defaultSenderEmail || `no-reply@${getEmailDomain()}`
@@ -92,7 +93,7 @@ export async function POST(request: NextRequest) {
       subject,
       resendEmailId: result.id,
     });
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, to: SUPPORT_INTERNATIONAL_PAYMENTS_EMAIL });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
 
@@ -111,7 +112,7 @@ export async function POST(request: NextRequest) {
           subject,
           resendEmailId: result.id,
         });
-        return NextResponse.json({ ok: true });
+        return NextResponse.json({ ok: true, to: SUPPORT_INTERNATIONAL_PAYMENTS_EMAIL });
       } catch (e2) {
         const msg2 = e2 instanceof Error ? e2.message : String(e2);
         console.error("international-payments/request: fallback send failed", {

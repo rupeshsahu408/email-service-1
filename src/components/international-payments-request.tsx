@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { SUPPORT_INTERNATIONAL_PAYMENTS_EMAIL } from "@/lib/support-international-payments-email";
 
 export function InternationalPaymentsRequest({
   initialEmail,
@@ -67,9 +68,16 @@ export function InternationalPaymentsRequest({
         }),
       });
 
-      const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        error?: string;
+        to?: string;
+      };
 
-      if (!res.ok || data.ok !== true) {
+      const sentToExpected =
+        data.ok === true && data.to === SUPPORT_INTERNATIONAL_PAYMENTS_EMAIL;
+
+      if (!res.ok || !sentToExpected) {
         setSubmitError(data.error ?? "Could not submit request. Please try again.");
         setSubmitting(false);
         return;
