@@ -3,7 +3,7 @@ import { z } from "zod";
 import { createHash } from "crypto";
 
 import { sendOutboundMail } from "@/lib/resend-mail";
-import { getEmailDomain } from "@/lib/constants";
+import { getEmailDomain, getProfessionalRootDomain } from "@/lib/constants";
 import { getAdminSystemSettings } from "@/lib/admin-system-settings";
 import { getClientIp, rateLimitRecoverySupportByKey } from "@/lib/rate-limit";
 
@@ -51,9 +51,10 @@ export async function POST(request: NextRequest) {
 
   const to = "mail-support.studyhelp@gmail.com";
   const adminSettings = await getAdminSystemSettings();
-  const from = `${adminSettings.general.appName} <${
+  const fromPrimary = `${adminSettings.general.appName} <${
     adminSettings.email.defaultSenderEmail || `no-reply@${getEmailDomain()}`
   }>`;
+  const fromFallback = `${adminSettings.general.appName} <no-reply@${getProfessionalRootDomain()}>`;
   const subject = "[International Payments] Demand Request";
   const timestamp = new Date().toISOString();
 
@@ -78,14 +79,36 @@ export async function POST(request: NextRequest) {
     </div>
   `.trim();
 
+  async function sendWithFrom(from: string) {
+    return sendOutboundMail({ from, to, subject, text, html });
+  }
+
   try {
-    await sendOutboundMail({ from, to, subject, text, html });
+    await sendWithFrom(fromPrimary);
     return NextResponse.json({ ok: true });
   } catch (e) {
-    console.error("international-payments/request: send failed", {
-      message: e instanceof Error ? e.message : String(e),
-    });
-    const msg = e instanceof Error ? e.message : "Could not send support request";
+    const msg = e instanceof Error ? e.message : String(e);
+
+    // Resend validates the `from` domain. If `sendora.com` isn't verified, retry with `sendora.me`.
+    if (/domain is not verified/i.test(msg) || msg.includes("Please, add and verify your domain")) {
+      console.error("international-payments/request: primary from domain unverified, retrying", {
+        fromPrimary,
+        fromFallback,
+        message: msg,
+      });
+      try {
+        await sendWithFrom(fromFallback);
+        return NextResponse.json({ ok: true });
+      } catch (e2) {
+        const msg2 = e2 instanceof Error ? e2.message : String(e2);
+        console.error("international-payments/request: fallback send failed", {
+          message: msg2,
+        });
+        return NextResponse.json({ error: msg2 }, { status: 502 });
+      }
+    }
+
+    console.error("international-payments/request: send failed", { message: msg });
     return NextResponse.json({ error: msg }, { status: 502 });
   }
 }
