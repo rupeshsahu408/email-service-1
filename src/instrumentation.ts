@@ -511,6 +511,7 @@ export async function register() {
             user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
             product_type VARCHAR(32) NOT NULL,
             "interval" VARCHAR(16) NOT NULL,
+            billing_cycle VARCHAR(16) NOT NULL DEFAULT 'monthly',
             provider VARCHAR(32) NOT NULL DEFAULT 'razorpay',
             provider_subscription_id VARCHAR(128) NOT NULL,
             provider_plan_id VARCHAR(128),
@@ -531,6 +532,7 @@ export async function register() {
             ADD COLUMN IF NOT EXISTS user_id UUID,
             ADD COLUMN IF NOT EXISTS product_type VARCHAR(32),
             ADD COLUMN IF NOT EXISTS "interval" VARCHAR(16),
+            ADD COLUMN IF NOT EXISTS billing_cycle VARCHAR(16) DEFAULT 'monthly',
             ADD COLUMN IF NOT EXISTS provider VARCHAR(32) DEFAULT 'razorpay',
             ADD COLUMN IF NOT EXISTS provider_subscription_id VARCHAR(128),
             ADD COLUMN IF NOT EXISTS provider_plan_id VARCHAR(128),
@@ -551,8 +553,21 @@ export async function register() {
           WHERE provider_subscription_id IS NULL
         `;
         await sql`
+          UPDATE billing_subscriptions
+          SET billing_cycle = COALESCE(NULLIF(TRIM(billing_cycle), ''), "interval", 'monthly')
+          WHERE billing_cycle IS NULL OR TRIM(billing_cycle) = ''
+        `;
+        await sql`
+          ALTER TABLE billing_subscriptions
+            ALTER COLUMN billing_cycle SET DEFAULT 'monthly'
+        `;
+        await sql`
           ALTER TABLE billing_subscriptions
             ALTER COLUMN provider_subscription_id SET NOT NULL
+        `;
+        await sql`
+          ALTER TABLE billing_subscriptions
+            ALTER COLUMN billing_cycle SET NOT NULL
         `;
         await sql`
           DO $$

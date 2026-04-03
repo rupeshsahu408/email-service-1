@@ -123,6 +123,11 @@ export const billingSubscriptions = pgTable(
       .notNull()
       .$type<BillingProductType>(),
     interval: varchar("interval", { length: 16 }).notNull().$type<BillingInterval>(),
+    /** Present on some DBs as NOT NULL; mirrors `interval` for Razorpay. */
+    billingCycle: varchar("billing_cycle", { length: 16 })
+      .notNull()
+      .$type<BillingInterval>()
+      .default("monthly"),
     provider: varchar("provider", { length: 32 }).notNull().default("razorpay"),
     providerSubscriptionId: varchar("provider_subscription_id", { length: 128 }).notNull(),
     providerPlanId: varchar("provider_plan_id", { length: 128 }),
