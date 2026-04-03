@@ -75,8 +75,51 @@ export function isPostgresForeignKeyViolation(err: unknown): boolean {
   );
 }
 
-/** Best-effort debug string for logs (no PII beyond what the driver already put in the message). */
+/**
+ * Prefer driver/Postgres fields (code, detail) — Drizzle's outer message is huge and
+ * was hiding the real failure when logs were truncated.
+ */
 export function formatPostgresErrorForLog(err: unknown): string {
+  const parts: string[] = [];
+  const seen = new Set<unknown>();
+
+  function walk(cur: unknown, depth: number): void {
+    if (cur == null || depth > 14 || seen.has(cur)) return;
+    seen.add(cur);
+
+    if (typeof cur === "object") {
+      const o = cur as Record<string, unknown>;
+      const code = o.code;
+      if (typeof code === "string" && code.length > 0) {
+        parts.push(`pg_code=${code}`);
+      }
+      for (const k of ["detail", "constraint", "schema", "table", "column", "routine"]) {
+        const v = o[k];
+        if (v != null && String(v).length > 0) {
+          parts.push(`${k}=${String(v).slice(0, 400)}`);
+        }
+      }
+      const msg = o.message != null ? String(o.message) : "";
+      if (msg && !/^Failed query:/i.test(msg) && !msg.includes("params:")) {
+        parts.push(`message=${msg.slice(0, 500)}`);
+      }
+    }
+
+    if (cur instanceof Error && cur.cause != null) walk(cur.cause, depth + 1);
+    if (typeof cur === "object" && cur != null) {
+      const o = cur as Record<string, unknown>;
+      for (const k of ["cause", "originalError", "error"]) {
+        const n = o[k];
+        if (n != null) walk(n, depth + 1);
+      }
+    }
+  }
+
+  walk(err, 0);
+
+  const summary = parts.filter(Boolean).join(" | ");
+  if (summary.length > 0) return summary.length > 1500 ? `${summary.slice(0, 1500)}…` : summary;
+
   const blob = collectPgErrorBlob(err);
   return blob.length > 1200 ? `${blob.slice(0, 1200)}…` : blob;
 }
