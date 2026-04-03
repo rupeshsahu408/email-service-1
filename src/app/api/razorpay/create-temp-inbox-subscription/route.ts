@@ -6,6 +6,7 @@ import {
 } from "@/lib/razorpay";
 import { getRazorpayPlanMapping, upsertBillingSubscription } from "@/lib/billing";
 import { logError } from "@/lib/logger";
+import { formatPostgresErrorForLog } from "@/lib/pg-error";
 
 export async function POST(request: Request) {
   const user = await getCurrentUser();
@@ -57,6 +58,7 @@ export async function POST(request: Request) {
   } catch (e) {
     logError("razorpay_create_temp_inbox_subscription_failed", {
       message: e instanceof Error ? e.message : "unknown",
+      pg: formatPostgresErrorForLog(e),
     });
     return NextResponse.json(
       { error: "Could not create subscription." },

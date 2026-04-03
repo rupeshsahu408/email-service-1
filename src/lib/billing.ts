@@ -7,6 +7,10 @@ import {
   BillingProductType,
 } from "@/db/schema";
 import { logError, logInfo } from "@/lib/logger";
+import {
+  isPostgresOnConflictTargetError,
+  isPostgresUniqueViolation,
+} from "@/lib/pg-error";
 
 const ACTIVE_SUBSCRIPTION_STATUSES = ["active", "authenticated", "created"] as const;
 const SUCCESS_PAYMENT_STATUSES = ["captured", "success"] as const;
@@ -133,12 +137,59 @@ export async function upsertBillingSubscription(input: {
     updatedAt: now,
   };
 
-  await db
-    .insert(billingSubscriptions)
-    .values(values)
-    .onConflictDoUpdate({
-      target: billingSubscriptions.providerSubscriptionId,
-      set: {
+  const metadataJson = JSON.stringify(values.metadata);
+
+  try {
+    await db.execute(sql`
+      insert into billing_subscriptions (
+        user_id,
+        product_type,
+        "interval",
+        provider_subscription_id,
+        provider_plan_id,
+        status,
+        auto_renew,
+        current_start_at,
+        current_end_at,
+        next_billing_at,
+        cancel_at_cycle_end,
+        cancelled_at,
+        metadata,
+        updated_at
+      ) values (
+        ${values.userId}::uuid,
+        ${values.productType},
+        ${values.interval},
+        ${values.providerSubscriptionId},
+        ${values.providerPlanId},
+        ${values.status},
+        ${values.autoRenew},
+        ${values.currentStartAt},
+        ${values.currentEndAt},
+        ${values.nextBillingAt},
+        ${values.cancelAtCycleEnd},
+        ${values.cancelledAt},
+        cast(${metadataJson} as jsonb),
+        ${values.updatedAt}
+      )
+      on conflict (provider_subscription_id) do update set
+        user_id = excluded.user_id,
+        product_type = excluded.product_type,
+        "interval" = excluded."interval",
+        provider_plan_id = excluded.provider_plan_id,
+        status = excluded.status,
+        auto_renew = excluded.auto_renew,
+        current_start_at = excluded.current_start_at,
+        current_end_at = excluded.current_end_at,
+        next_billing_at = excluded.next_billing_at,
+        cancel_at_cycle_end = excluded.cancel_at_cycle_end,
+        cancelled_at = excluded.cancelled_at,
+        metadata = excluded.metadata,
+        updated_at = excluded.updated_at
+    `);
+  } catch (e) {
+    if (isPostgresOnConflictTargetError(e)) {
+      const set = {
         userId: values.userId,
         productType: values.productType,
         interval: values.interval,
@@ -152,8 +203,34 @@ export async function upsertBillingSubscription(input: {
         cancelledAt: values.cancelledAt,
         metadata: values.metadata,
         updatedAt: values.updatedAt,
-      },
-    });
+      };
+      await db
+        .update(billingSubscriptions)
+        .set(set)
+        .where(eq(billingSubscriptions.providerSubscriptionId, input.providerSubscriptionId));
+      const existing = await db
+        .select({ id: billingSubscriptions.id })
+        .from(billingSubscriptions)
+        .where(eq(billingSubscriptions.providerSubscriptionId, input.providerSubscriptionId))
+        .limit(1);
+      if (existing.length === 0) {
+        try {
+          await db.insert(billingSubscriptions).values(values);
+        } catch (inner) {
+          if (isPostgresUniqueViolation(inner)) {
+            await db
+              .update(billingSubscriptions)
+              .set(set)
+              .where(eq(billingSubscriptions.providerSubscriptionId, input.providerSubscriptionId));
+          } else {
+            throw inner;
+          }
+        }
+      }
+    } else {
+      throw e;
+    }
+  }
 
   logInfo("billing_subscription_upserted", {
     userId: input.userId,

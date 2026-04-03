@@ -57,6 +57,24 @@ export function isPostgresUniqueViolation(err: unknown): boolean {
   );
 }
 
+/** ON CONFLICT has no matching unique index / constraint (often SQLSTATE 42P10). */
+export function isPostgresOnConflictTargetError(err: unknown): boolean {
+  const blob = collectPgErrorBlob(err);
+  return (
+    /\b42P10\b/.test(blob) ||
+    /no unique or exclusion constraint matching the ON CONFLICT/i.test(blob)
+  );
+}
+
+/** Foreign key violation (e.g. user_id not in users). */
+export function isPostgresForeignKeyViolation(err: unknown): boolean {
+  const blob = collectPgErrorBlob(err);
+  return (
+    /\b23503\b/.test(blob) ||
+    /violates foreign key constraint/i.test(blob)
+  );
+}
+
 /** Best-effort debug string for logs (no PII beyond what the driver already put in the message). */
 export function formatPostgresErrorForLog(err: unknown): string {
   const blob = collectPgErrorBlob(err);
