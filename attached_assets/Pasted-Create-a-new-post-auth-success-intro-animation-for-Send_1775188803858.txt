@@ -1,0 +1,156 @@
+Create a new **post-auth success intro animation** for **Sendora** that appears after both:
+
+1. successful login
+2. successful signup
+
+After the animation completes, automatically navigate the user to the **inbox/dashboard**.
+
+## Core direction
+
+The animation should feel:
+
+* **cinematic**
+* **bold**
+* **dark luxury**
+* **premium**
+* **dramatic**
+* **original to Sendora**
+
+It should take inspiration from a **high-end streaming/cinematic brand feel**, but **must not copy Netflix directly**.
+Also, **do not imitate Gmail, Google Workspace, or any Google-style motion/design**.
+
+The result should feel like a strong branded intro moment for Sendora.
+
+## Duration
+
+* Total duration: **around 5 seconds**
+* It should feel intentional and premium, not rushed
+* Keep pacing smooth and elegant
+
+## Visual style
+
+Use a **dark cinematic background** with a **golden luxury atmosphere**.
+
+### Background treatment
+
+* Base background should be **near-black / deep black**
+* Add a **soft blurred golden radial glow**
+* The golden light should feel diffused, premium, and atmospheric
+* Keep edges darker for a cinematic vignette effect
+* Do **not** use a flat gold background
+* Do **not** make it bright yellow
+* The overall feeling should be dark, rich, and luxurious
+
+Suggested palette direction:
+
+* black / near-black base
+* soft gold / amber glow
+* subtle support from Sendora’s blue/purple tones where appropriate
+
+## Logo reveal
+
+Use the **Sendora logo** as the hero element.
+
+### Important
+
+* Keep the **original Sendora logo colors intact**
+* Do **not** recolor the logo fully into gold
+* Gold should feel like the surrounding cinematic lighting
+* The logo itself should still look clearly like the Sendora brand
+
+### Reveal behavior
+
+The logo should:
+
+* appear in a dramatic and premium way
+* emerge from darkness
+* feel crisp, luminous, and centered
+* stay on screen long enough to feel memorable
+
+Suggested motion:
+
+* logo starts subtly hidden / dim
+* scales in smoothly
+* blooms with a premium glow on entry
+* settles into a refined ambient glow
+* includes a light sweep / highlight pass
+* can include subtle expanding rings or ripple energy if done tastefully
+
+Keep everything elegant and controlled.
+Do not make it flashy, noisy, or game-like.
+
+## Text
+
+After the logo reveal, show:
+
+**Welcome to Sendora**
+
+This text should:
+
+* appear below the logo
+* fade in softly or rise gently from below
+* feel cinematic and premium
+* use elegant spacing and smooth timing
+
+Optional secondary line below it:
+**Your private inbox**
+
+If used, keep it subtle and refined.
+
+## Timing guidance
+
+Use a premium cinematic sequence across ~5 seconds, for example:
+
+* background atmosphere builds first
+* logo reveal begins
+* glow/light sweep enhances the logo
+* logo holds as the hero moment
+* “Welcome to Sendora” appears below
+* scene exits smoothly into the inbox/dashboard
+
+The logo should remain visible long enough to create a strong brand moment.
+
+## Exit transition
+
+After the intro:
+
+* smoothly fade/transition into the inbox/dashboard
+* no abrupt cut
+* the transition should feel integrated with the product experience
+
+## Functional requirements
+
+* Trigger after **successful login**
+* Trigger after **successful signup**
+* Then redirect to **inbox/dashboard**
+* Add **Skip** button or allow **Escape key** to skip immediately
+* Respect **prefers-reduced-motion**
+
+  * for reduced motion, show a simplified static/fade version briefly, then navigate
+* Must work well on **mobile and desktop**
+* Keep it **lightweight and performant**
+* Avoid heavy effects that hurt loading/performance
+
+## Design principles
+
+* dark luxury
+* cinematic reveal
+* premium motion
+* strong Sendora brand presence
+* minimal but memorable
+* original, not derivative
+
+## Avoid
+
+* copying Netflix branding directly
+* copying Gmail or Google motion language
+* overly bright yellow/gold backgrounds
+* cheesy lens flares
+* excessive particles
+* cluttered visuals
+* long loading-feel animation
+
+## Goal
+
+The final result should feel like a **signature Sendora success intro**:
+premium, dramatic, branded, smooth, and memorable.
