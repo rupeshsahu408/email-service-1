@@ -5,9 +5,5 @@ export const metadata = {
 };
 
 export default function SignupPage() {
-  return (
-    <div className="min-h-screen bg-[var(--background)]">
-      <SignupWizard />
-    </div>
-  );
+  return <SignupWizard />;
 }

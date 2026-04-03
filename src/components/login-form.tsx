@@ -35,6 +35,33 @@ function postLoginTarget(
   return nextSafe ?? apiRedirect ?? "/inbox";
 }
 
+const brandFeatures = [
+  {
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5">
+        <rect x="2" y="4" width="20" height="16" rx="3" /><path d="m2 7 10 7 10-7" />
+      </svg>
+    ),
+    text: "Private inbox, zero ads",
+  },
+  {
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5">
+        <rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" />
+      </svg>
+    ),
+    text: "End-to-end encryption",
+  },
+  {
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+      </svg>
+    ),
+    text: "No tracking or data selling",
+  },
+];
+
 export function LoginForm({ nextParam }: { nextParam?: string }) {
   const router = useRouter();
   const nextSafe = useMemo(
@@ -135,133 +162,186 @@ export function LoginForm({ nextParam }: { nextParam?: string }) {
         }}
       />
     ) : null}
-    <div className="min-h-screen bg-[#f3f0fd] flex flex-col">
-      {/* Header */}
-      <header className="px-6 py-4">
-        <Link href="/signup" className="flex items-center gap-2 w-fit">
-          <img src="/sendora-logo.png" alt="Sendora" className="w-8 h-8 object-contain" />
-          <span className="text-[15px] font-bold text-[#1c1b33]">Sendora</span>
-        </Link>
-      </header>
+    <div className="min-h-screen flex">
+      {/* ── Left brand panel (hidden on mobile) ── */}
+      <div className="hidden lg:flex lg:w-[45%] xl:w-[42%] flex-col justify-between bg-[#1c1b33] p-10 relative overflow-hidden">
+        {/* Background decorative blobs */}
+        <div className="pointer-events-none absolute -top-32 -right-32 w-80 h-80 rounded-full bg-[#6d4aff]/20 blur-[80px]" />
+        <div className="pointer-events-none absolute bottom-10 -left-20 w-64 h-64 rounded-full bg-[#4f35cc]/20 blur-[60px]" />
+        <div className="pointer-events-none absolute top-1/2 left-1/3 w-48 h-48 rounded-full bg-[#6d4aff]/10 blur-[50px]" />
 
-      {/* Form */}
-      <div className="flex-1 flex items-center justify-center px-6 py-12">
-        <div className="w-full max-w-sm">
-          <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-[#1c1b33] tracking-tight">Welcome back</h1>
-            <p className="mt-1.5 text-sm text-[#65637e]">Sign in to your Sendora account</p>
+        {/* Logo */}
+        <div className="relative z-10">
+          <Link href="/" className="flex items-center gap-2.5 w-fit">
+            <img src="/sendora-logo.png" alt="Sendora" className="w-9 h-9 object-contain" />
+            <span className="text-[17px] font-bold text-white tracking-tight">Sendora</span>
+          </Link>
+        </div>
+
+        {/* Center content */}
+        <div className="relative z-10 space-y-10">
+          <div>
+            <h2 className="text-3xl font-bold text-white leading-snug tracking-tight">
+              Email that works<br />
+              <span className="text-[#a78bfa]">for you, not against you</span>
+            </h2>
+            <p className="mt-4 text-[#9896b4] text-sm leading-relaxed max-w-xs">
+              A focused inbox built on privacy. No ads, no tracking, just your messages — fast and secure.
+            </p>
           </div>
-
-          <div className="bg-white rounded-2xl border border-[#e8e4f8] shadow-sm p-8">
-            <form onSubmit={onSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-[#1c1b33] uppercase tracking-wider mb-1.5">
-                  Email
-                </label>
-                <div className="flex rounded-xl border border-[#e8e4f8] bg-[#f8f5ff] focus-within:border-[#6d4aff] focus-within:bg-white transition-all">
-                  <input
-                    className="flex-1 min-w-0 bg-transparent px-3 py-2.5 text-sm text-[#1c1b33] outline-none placeholder:text-[#9896b4]"
-                    value={identifier}
-                    onChange={(e) => setIdentifier(e.target.value)}
-                    autoComplete="email"
-                    placeholder="you@example.com"
-                    required
-                  />
+          <ul className="space-y-4">
+            {brandFeatures.map((f) => (
+              <li key={f.text} className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-[#6d4aff]/25 text-[#a78bfa] flex items-center justify-center shrink-0">
+                  {f.icon}
                 </div>
-              </div>
+                <span className="text-sm text-[#c5c3d8]">{f.text}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
 
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-xs font-semibold text-[#1c1b33] uppercase tracking-wider">
-                    Password
-                  </label>
-                </div>
-                <div className="flex rounded-xl border border-[#e8e4f8] bg-[#f8f5ff] focus-within:border-[#6d4aff] focus-within:bg-white transition-all">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    className="flex-1 min-w-0 bg-transparent px-3 py-2.5 text-sm text-[#1c1b33] outline-none placeholder:text-[#9896b4]"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    autoComplete="current-password"
-                    placeholder="••••••••••••"
-                    required
-                  />
-                  <button
-                    type="button"
-                    tabIndex={-1}
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="px-3 text-[#9896b4] hover:text-[#6d4aff] transition-colors"
-                  >
-                    {showPassword ? (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4">
-                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" /><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" /><line x1="1" y1="1" x2="23" y2="23" />
-                      </svg>
-                    ) : (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
-                      </svg>
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {error && (
-                <div className="flex items-start gap-2 rounded-lg bg-red-50 border border-red-100 px-3 py-2.5 text-xs text-red-700">
-                  <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 shrink-0 mt-px"><path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM8.28 7.22a.75.75 0 0 0-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 1 0 1.06 1.06L10 11.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L11.06 10l1.72-1.72a.75.75 0 0 0-1.06-1.06L10 8.94 8.28 7.22Z" clipRule="evenodd" /></svg>
-                  {error}
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full rounded-full bg-[#6d4aff] py-3 text-sm font-semibold text-white shadow-md shadow-[#6d4aff]/20 hover:bg-[#5b3dff] transition-all disabled:opacity-60 disabled:cursor-not-allowed mt-2"
-              >
-                {loading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeOpacity="0.3" /><path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" /></svg>
-                    Signing in…
-                  </span>
-                ) : "Sign in"}
-              </button>
-              <button
-                type="button"
-                onClick={onPasskeyLogin}
-                disabled={passkeyLoading || loading}
-                className="w-full rounded-full bg-white border border-[#e8e4f8] py-3 text-sm font-semibold text-[#1c1b33] hover:bg-[#faf8ff] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {passkeyLoading ? "Opening passkey…" : "Login with Passkey"}
-              </button>
-              <p className="text-center text-xs text-[#9896b4]">
-                If passkey fails, continue with password or use{" "}
-                <Link href="/forgot-password" className="text-[#6d4aff] hover:text-[#5b3dff]">
-                  backup recovery
-                </Link>
-                .
-              </p>
-              <div className="text-center">
-                <Link
-                  href="/forgot-password"
-                  className="inline-block text-sm font-semibold text-[#6d4aff] hover:text-[#5b3dff] transition-colors"
-                >
-                  Forgot password?
-                </Link>
-              </div>
-            </form>
-
-            <div className="mt-6 pt-5 border-t border-[#f0edfb] text-center">
-              <p className="text-sm text-[#65637e]">
-                Don&apos;t have an account?{" "}
-                <Link href="/signup" className="font-semibold text-[#6d4aff] hover:text-[#5b3dff] transition-colors">
-                  Create one free
-                </Link>
-              </p>
-            </div>
-          </div>
-
-          <p className="mt-6 text-center text-xs text-[#9896b4]">
-            By signing in, you agree to our privacy-first approach — no tracking, no ads.
+        {/* Bottom */}
+        <div className="relative z-10">
+          <p className="text-xs text-[#65637e]">
+            © {new Date().getFullYear()} Sendora. Privacy-first email.
           </p>
+        </div>
+      </div>
+
+      {/* ── Right form panel ── */}
+      <div className="flex-1 flex flex-col bg-[#f3f0fd]">
+        {/* Mobile-only header */}
+        <header className="lg:hidden px-6 py-4">
+          <Link href="/" className="flex items-center gap-2 w-fit">
+            <img src="/sendora-logo.png" alt="Sendora" className="w-8 h-8 object-contain" />
+            <span className="text-[15px] font-bold text-[#1c1b33]">Sendora</span>
+          </Link>
+        </header>
+
+        <div className="flex-1 flex items-center justify-center px-6 py-12">
+          <div className="w-full max-w-sm">
+            <div className="text-center mb-8">
+              <h1 className="text-2xl font-bold text-[#1c1b33] tracking-tight">Welcome back</h1>
+              <p className="mt-1.5 text-sm text-[#65637e]">Sign in to your Sendora account</p>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-[#e8e4f8] shadow-sm p-8">
+              <form onSubmit={onSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-[#1c1b33] uppercase tracking-wider mb-1.5">
+                    Email
+                  </label>
+                  <div className="flex rounded-xl border border-[#e8e4f8] bg-[#f8f5ff] focus-within:border-[#6d4aff] focus-within:bg-white transition-all">
+                    <input
+                      className="flex-1 min-w-0 bg-transparent px-3 py-2.5 text-sm text-[#1c1b33] outline-none placeholder:text-[#9896b4]"
+                      value={identifier}
+                      onChange={(e) => setIdentifier(e.target.value)}
+                      autoComplete="email"
+                      placeholder="you@example.com"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-semibold text-[#1c1b33] uppercase tracking-wider">
+                      Password
+                    </label>
+                  </div>
+                  <div className="flex rounded-xl border border-[#e8e4f8] bg-[#f8f5ff] focus-within:border-[#6d4aff] focus-within:bg-white transition-all">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      className="flex-1 min-w-0 bg-transparent px-3 py-2.5 text-sm text-[#1c1b33] outline-none placeholder:text-[#9896b4]"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      autoComplete="current-password"
+                      placeholder="••••••••••••"
+                      required
+                    />
+                    <button
+                      type="button"
+                      tabIndex={-1}
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="px-3 text-[#9896b4] hover:text-[#6d4aff] transition-colors"
+                    >
+                      {showPassword ? (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4">
+                          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" /><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" /><line x1="1" y1="1" x2="23" y2="23" />
+                        </svg>
+                      ) : (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {error && (
+                  <div className="flex items-start gap-2 rounded-lg bg-red-50 border border-red-100 px-3 py-2.5 text-xs text-red-700">
+                    <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 shrink-0 mt-px"><path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM8.28 7.22a.75.75 0 0 0-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 1 0 1.06 1.06L10 11.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L11.06 10l1.72-1.72a.75.75 0 0 0-1.06-1.06L10 8.94 8.28 7.22Z" clipRule="evenodd" /></svg>
+                    {error}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full rounded-full bg-[#6d4aff] py-3 text-sm font-semibold text-white shadow-md shadow-[#6d4aff]/20 hover:bg-[#5b3dff] transition-all disabled:opacity-60 disabled:cursor-not-allowed mt-2"
+                >
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeOpacity="0.3" /><path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" /></svg>
+                      Signing in…
+                    </span>
+                  ) : "Sign in"}
+                </button>
+                <button
+                  type="button"
+                  onClick={onPasskeyLogin}
+                  disabled={passkeyLoading || loading}
+                  className="w-full rounded-full bg-white border border-[#e8e4f8] py-3 text-sm font-semibold text-[#1c1b33] hover:bg-[#faf8ff] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {passkeyLoading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeOpacity="0.3" /><path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" /></svg>
+                      Opening passkey…
+                    </span>
+                  ) : "Login with Passkey"}
+                </button>
+                <p className="text-center text-xs text-[#9896b4]">
+                  If passkey fails, continue with password or use{" "}
+                  <Link href="/forgot-password" className="text-[#6d4aff] hover:text-[#5b3dff]">
+                    backup recovery
+                  </Link>
+                  .
+                </p>
+                <div className="text-center">
+                  <Link
+                    href="/forgot-password"
+                    className="inline-block text-sm font-semibold text-[#6d4aff] hover:text-[#5b3dff] transition-colors"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
+              </form>
+
+              <div className="mt-6 pt-5 border-t border-[#f0edfb] text-center">
+                <p className="text-sm text-[#65637e]">
+                  Don&apos;t have an account?{" "}
+                  <Link href="/signup" className="font-semibold text-[#6d4aff] hover:text-[#5b3dff] transition-colors">
+                    Create one free
+                  </Link>
+                </p>
+              </div>
+            </div>
+
+            <p className="mt-6 text-center text-xs text-[#9896b4]">
+              By signing in, you agree to our privacy-first approach — no tracking, no ads.
+            </p>
+          </div>
         </div>
       </div>
     </div>

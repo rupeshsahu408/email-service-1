@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 
 const domain = process.env.NEXT_PUBLIC_EMAIL_DOMAIN ?? "auramail.app";
@@ -121,6 +124,8 @@ const plans = [
 ];
 
 export function LandingPage() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   return (
     <div className="flex flex-col min-h-screen bg-white text-[#1c1b33]">
       {/* ── Header ── */}
@@ -135,7 +140,7 @@ export function LandingPage() {
             <a href="#security" className="hover:text-[#6d4aff] transition-colors">Security</a>
             <a href="#pricing" className="hover:text-[#6d4aff] transition-colors">Pricing</a>
           </nav>
-          <div className="flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-3">
             <Link href="/login" className="text-sm font-medium text-[#65637e] hover:text-[#6d4aff] transition-colors">
               Sign in
             </Link>
@@ -146,7 +151,68 @@ export function LandingPage() {
               Create free account
             </Link>
           </div>
+
+          {/* Mobile hamburger */}
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden p-2 rounded-lg text-[#65637e] hover:text-[#1c1b33] hover:bg-[#f3f0fd] transition-all"
+            aria-label="Toggle menu"
+          >
+            {mobileMenuOpen ? (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
+                <path d="M18 6 6 18M6 6l12 12" />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
+                <path d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            )}
+          </button>
         </div>
+
+        {/* Mobile dropdown menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-[#e8e4f8] bg-white px-6 py-4 space-y-1">
+            <a
+              href="#features"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block py-2.5 text-sm font-medium text-[#65637e] hover:text-[#6d4aff] transition-colors"
+            >
+              Features
+            </a>
+            <a
+              href="#security"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block py-2.5 text-sm font-medium text-[#65637e] hover:text-[#6d4aff] transition-colors"
+            >
+              Security
+            </a>
+            <a
+              href="#pricing"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block py-2.5 text-sm font-medium text-[#65637e] hover:text-[#6d4aff] transition-colors"
+            >
+              Pricing
+            </a>
+            <div className="pt-3 border-t border-[#f0edfb] flex flex-col gap-2">
+              <Link
+                href="/login"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block text-center py-2.5 text-sm font-semibold text-[#6d4aff] hover:bg-[#f3f0fd] rounded-xl transition-colors"
+              >
+                Sign in
+              </Link>
+              <Link
+                href="/signup"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block text-center rounded-full bg-[#6d4aff] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#5b3dff] transition-colors"
+              >
+                Create free account
+              </Link>
+            </div>
+          </div>
+        )}
       </header>
 
       <main>
@@ -163,26 +229,26 @@ export function LandingPage() {
               Privacy-first email platform
             </div>
 
-            <h1 className="animate-fade-in-up text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-[#1c1b33] leading-[1.1]">
+            <h1 className="animate-fade-in-up text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-[#1c1b33] leading-[1.1]">
               Email that respects<br />
               <span className="text-[#6d4aff]">your privacy</span>
             </h1>
 
-            <p className="animate-fade-in-up mt-6 mx-auto max-w-2xl text-lg text-[#65637e] leading-relaxed" style={{ animationDelay: "0.1s" }}>
+            <p className="animate-fade-in-up mt-6 mx-auto max-w-2xl text-base sm:text-lg text-[#65637e] leading-relaxed" style={{ animationDelay: "0.1s" }}>
               Take control of your inbox with end-to-end encryption, zero tracking, and a beautiful interface built for focus — not distraction.
             </p>
 
-            <div className="animate-fade-in-up mt-10 flex flex-wrap items-center justify-center gap-4" style={{ animationDelay: "0.2s" }}>
+            <div className="animate-fade-in-up mt-10 flex flex-wrap items-center justify-center gap-3 sm:gap-4" style={{ animationDelay: "0.2s" }}>
               <Link
                 href="/signup"
-                className="inline-flex items-center gap-2 rounded-full bg-[#6d4aff] px-8 py-3.5 text-base font-semibold text-white shadow-lg shadow-[#6d4aff]/30 hover:bg-[#5b3dff] transition-all hover:shadow-xl hover:shadow-[#6d4aff]/40"
+                className="inline-flex items-center gap-2 rounded-full bg-[#6d4aff] px-6 sm:px-8 py-3 sm:py-3.5 text-sm sm:text-base font-semibold text-white shadow-lg shadow-[#6d4aff]/30 hover:bg-[#5b3dff] transition-all hover:shadow-xl hover:shadow-[#6d4aff]/40"
               >
                 Create free account
                 <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.638L10.23 5.29a.75.75 0 1 1 1.04-1.08l5.5 5.25a.75.75 0 0 1 0 1.08l-5.5 5.25a.75.75 0 1 1-1.04-1.08l4.158-3.96H3.75A.75.75 0 0 1 3 10Z" clipRule="evenodd" /></svg>
               </Link>
               <a
                 href="#pricing"
-                className="inline-flex items-center gap-2 rounded-full border border-[#d4cafe] bg-white px-7 py-3.5 text-base font-semibold text-[#6d4aff] hover:bg-[#f3f0fd] transition-colors"
+                className="inline-flex items-center gap-2 rounded-full border border-[#d4cafe] bg-white px-6 sm:px-7 py-3 sm:py-3.5 text-sm sm:text-base font-semibold text-[#6d4aff] hover:bg-[#f3f0fd] transition-colors"
               >
                 Compare plans
               </a>
@@ -204,12 +270,12 @@ export function LandingPage() {
                 </div>
                 {/* Mockup content */}
                 <div className="flex h-48 text-left">
-                  <div className="w-40 bg-[#1c1b33] flex flex-col gap-1 p-3">
+                  <div className="w-36 sm:w-40 bg-[#1c1b33] flex flex-col gap-1 p-3">
                     {["Inbox", "Drafts", "Sent", "Starred", "Trash"].map((f, i) => (
                       <div key={f} className={`rounded px-2 py-1 text-[11px] ${i === 0 ? "bg-[#6d4aff]/40 text-white" : "text-white/40"}`}>{f}</div>
                     ))}
                   </div>
-                  <div className="w-52 border-r border-[#f0edfb] flex flex-col">
+                  <div className="w-44 sm:w-52 border-r border-[#f0edfb] flex flex-col">
                     {["Welcome to Sendora", "Your account is ready", "Getting started guide"].map((s, i) => (
                       <div key={s} className={`px-3 py-2.5 border-b border-[#f0edfb] ${i === 0 ? "bg-[#ede8ff]" : ""}`}>
                         <div className="text-[11px] font-semibold text-[#1c1b33] truncate">{s}</div>
@@ -217,7 +283,7 @@ export function LandingPage() {
                       </div>
                     ))}
                   </div>
-                  <div className="flex-1 p-4 flex flex-col gap-2">
+                  <div className="flex-1 p-4 flex flex-col gap-2 min-w-0">
                     <div className="h-3 bg-[#f3f0fd] rounded w-3/4" />
                     <div className="h-3 bg-[#f3f0fd] rounded w-full" />
                     <div className="h-3 bg-[#f3f0fd] rounded w-5/6" />
@@ -233,7 +299,7 @@ export function LandingPage() {
 
         {/* ── Trust strip ── */}
         <section className="border-y border-[#e8e4f8] bg-white px-6 py-5">
-          <div className="mx-auto max-w-5xl flex flex-wrap items-center justify-center gap-8 text-sm text-[#65637e]">
+          <div className="mx-auto max-w-5xl flex flex-wrap items-center justify-center gap-5 sm:gap-8 text-sm text-[#65637e]">
             {[
               { icon: "🔐", text: "End-to-end encrypted" },
               { icon: "📵", text: "No phone number required" },
@@ -249,17 +315,17 @@ export function LandingPage() {
         </section>
 
         {/* ── Features ── */}
-        <section id="features" className="px-6 py-24 bg-[#f8f5ff]">
+        <section id="features" className="px-6 py-20 sm:py-24 bg-[#f8f5ff]">
           <div className="mx-auto max-w-6xl">
-            <div className="text-center mb-14">
-              <h2 className="text-3xl sm:text-4xl font-bold text-[#1c1b33] tracking-tight">
+            <div className="text-center mb-12 sm:mb-14">
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#1c1b33] tracking-tight">
                 Everything you need, nothing you don&apos;t
               </h2>
-              <p className="mt-4 mx-auto max-w-xl text-[#65637e]">
+              <p className="mt-4 mx-auto max-w-xl text-[#65637e] text-sm sm:text-base">
                 A thoughtfully designed email experience focused on speed, privacy, and clarity.
               </p>
             </div>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
               {features.map((f) => (
                 <div
                   key={f.title}
@@ -277,21 +343,21 @@ export function LandingPage() {
         </section>
 
         {/* ── Security section ── */}
-        <section id="security" className="px-6 py-24 bg-white">
+        <section id="security" className="px-6 py-20 sm:py-24 bg-white">
           <div className="mx-auto max-w-6xl">
-            <div className="grid lg:grid-cols-2 gap-14 items-center">
+            <div className="grid lg:grid-cols-2 gap-10 lg:gap-14 items-center">
               <div>
                 <div className="inline-flex items-center gap-2 text-xs font-semibold text-[#6d4aff] uppercase tracking-widest mb-4">
                   <span className="w-6 h-px bg-[#6d4aff]" />
                   Security first
                 </div>
-                <h2 className="text-3xl sm:text-4xl font-bold text-[#1c1b33] tracking-tight leading-tight">
+                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#1c1b33] tracking-tight leading-tight">
                   Built with privacy<br />at the core
                 </h2>
-                <p className="mt-5 text-[#65637e] leading-relaxed">
+                <p className="mt-5 text-[#65637e] leading-relaxed text-sm sm:text-base">
                   Unlike free mail services that monetize your data, Sendora is designed from the ground up to protect your information. Your password is hashed with modern cryptography, your messages are yours alone, and we never show you ads.
                 </p>
-                <div className="mt-8 grid grid-cols-2 gap-3">
+                <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {securityPoints.map(({ icon, label }) => (
                     <div key={label} className="flex items-center gap-2.5 text-sm text-[#1c1b33]">
                       <span className="text-base">{icon}</span>
@@ -306,7 +372,7 @@ export function LandingPage() {
                   Get started free
                 </Link>
               </div>
-              <div className="rounded-2xl bg-[#1c1b33] p-8 text-white">
+              <div className="rounded-2xl bg-[#1c1b33] p-6 sm:p-8 text-white">
                 <div className="space-y-4">
                   {[
                     { step: "01", title: "Choose your address", desc: `Pick a unique @${domain} username` },
@@ -331,26 +397,26 @@ export function LandingPage() {
         </section>
 
         {/* ── Pricing ── */}
-        <section id="pricing" className="px-6 py-24 bg-[#f8f5ff]">
+        <section id="pricing" className="px-6 py-20 sm:py-24 bg-[#f8f5ff]">
           <div className="mx-auto max-w-5xl">
-            <div className="text-center mb-14">
-              <h2 className="text-3xl sm:text-4xl font-bold text-[#1c1b33] tracking-tight">
+            <div className="text-center mb-12 sm:mb-14">
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#1c1b33] tracking-tight">
                 Simple, transparent pricing
               </h2>
-              <p className="mt-4 text-[#65637e]">No hidden fees. No ads. Upgrade or downgrade anytime.</p>
+              <p className="mt-4 text-[#65637e] text-sm sm:text-base">No hidden fees. No ads. Upgrade or downgrade anytime.</p>
             </div>
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid md:grid-cols-3 gap-5 sm:gap-6">
               {plans.map((plan) => (
                 <div
                   key={plan.name}
-                  className={`relative rounded-2xl p-7 flex flex-col ${
+                  className={`relative rounded-2xl p-6 sm:p-7 flex flex-col ${
                     plan.filled
                       ? "bg-[#6d4aff] text-white shadow-xl shadow-[#6d4aff]/30"
                       : "bg-white border border-[#e8e4f8] shadow-sm"
                   }`}
                 >
                   {plan.badge && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[#f0c34b] text-[#1c1b33] text-xs font-bold px-3 py-1">
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[#f0c34b] text-[#1c1b33] text-xs font-bold px-3 py-1 whitespace-nowrap">
                       {plan.badge}
                     </div>
                   )}
@@ -391,18 +457,20 @@ export function LandingPage() {
         </section>
 
         {/* ── CTA Banner ── */}
-        <section className="px-6 py-24 bg-[#1c1b33]">
-          <div className="mx-auto max-w-3xl text-center">
-            <div className="pointer-events-none absolute left-0 right-0 h-48 bg-[#6d4aff]/10 blur-[80px] -z-10" />
-            <h2 className="text-3xl sm:text-4xl font-bold text-white tracking-tight">
+        <section className="relative px-6 py-20 sm:py-24 bg-[#1c1b33] overflow-hidden">
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <div className="w-[600px] h-[300px] rounded-full bg-[#6d4aff]/15 blur-[100px]" />
+          </div>
+          <div className="relative mx-auto max-w-3xl text-center">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight">
               Start protecting your privacy today
             </h2>
-            <p className="mt-4 text-white/60 text-lg">
+            <p className="mt-4 text-white/60 text-base sm:text-lg">
               Free forever. No credit card. No phone number. Just your @{domain} address.
             </p>
             <Link
               href="/signup"
-              className="mt-8 inline-flex items-center gap-2 rounded-full bg-[#6d4aff] px-8 py-3.5 text-base font-semibold text-white shadow-lg shadow-[#6d4aff]/40 hover:bg-[#7d5fff] transition-all"
+              className="mt-8 inline-flex items-center gap-2 rounded-full bg-[#6d4aff] px-7 sm:px-8 py-3 sm:py-3.5 text-sm sm:text-base font-semibold text-white shadow-lg shadow-[#6d4aff]/40 hover:bg-[#7d5fff] transition-all"
             >
               Create your free account
             </Link>
@@ -417,14 +485,14 @@ export function LandingPage() {
       </main>
 
       {/* ── Footer ── */}
-      <footer className="bg-white border-t border-[#e8e4f8] px-6 py-10">
-        <div className="mx-auto max-w-6xl flex flex-col sm:flex-row items-center justify-between gap-6">
+      <footer className="bg-white border-t border-[#e8e4f8] px-6 py-8 sm:py-10">
+        <div className="mx-auto max-w-6xl flex flex-col sm:flex-row items-center justify-between gap-5 sm:gap-6">
           <div className="flex items-center gap-2.5">
             <img src="/sendora-logo.png" alt="Sendora" className="w-7 h-7 object-contain" />
             <span className="text-sm font-semibold text-[#1c1b33]">Sendora</span>
           </div>
-          <p className="text-xs text-[#9896b4]">© {new Date().getFullYear()} Sendora. All rights reserved.</p>
-          <nav className="flex gap-6 text-sm text-[#65637e]">
+          <p className="text-xs text-[#9896b4] order-last sm:order-none">© {new Date().getFullYear()} Sendora. All rights reserved.</p>
+          <nav className="flex flex-wrap justify-center gap-4 sm:gap-6 text-sm text-[#65637e]">
             <Link href="/signup" className="hover:text-[#6d4aff] transition-colors">Sign up</Link>
             <Link href="/login" className="hover:text-[#6d4aff] transition-colors">Sign in</Link>
             <a href="#features" className="hover:text-[#6d4aff] transition-colors">Features</a>

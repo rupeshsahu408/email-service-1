@@ -13,9 +13,5 @@ export default async function LoginPage({
   const raw = sp.next;
   const nextParam = Array.isArray(raw) ? raw[0] : raw;
 
-  return (
-    <div className="min-h-screen bg-[var(--background)]">
-      <LoginForm nextParam={nextParam} />
-    </div>
-  );
+  return <LoginForm nextParam={nextParam} />;
 }

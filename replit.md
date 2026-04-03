@@ -40,9 +40,9 @@ CSS variables defined in `src/app/globals.css`. Dark mode toggled via `html.dark
 ## Key Components
 
 - `src/components/inbox-client.tsx` — Main email UI: dark sidebar, message list, thread detail, floating compose panel
-- `src/components/landing.tsx` — Proton-inspired landing page with hero, features grid, security section, pricing, CTA, footer
-- `src/components/login-form.tsx` — Centered login card with show/hide password
-- `src/components/signup-wizard.tsx` — 4-step signup: username → captcha → password → recovery key
+- `src/components/landing.tsx` — Landing page: hero, features grid, security section, pricing, CTA, footer. Client component with mobile hamburger menu.
+- `src/components/login-form.tsx` — Split-screen login: dark left brand panel (desktop) + right form with show/hide password
+- `src/components/signup-wizard.tsx` — 5-step signup: username → captcha → password → recovery key → passkey. Split-screen layout with animated step sidebar.
 - `src/components/settings-client.tsx` — Full settings panel (10 sections)
 - `src/components/theme-provider.tsx` — Applies theme + accent color from settings API on navigation
 
