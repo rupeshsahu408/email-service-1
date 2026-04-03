@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ensureRazorpayCheckout } from "@/lib/razorpay-checkout";
 import { TEMP_INBOX_DAILY_MAX } from "@/lib/temp-inbox";
+import { InternationalPaymentsRequest } from "@/components/international-payments-request";
 
 declare global {
   interface Window {
@@ -142,6 +143,10 @@ export function TempInboxUpgradePage({
           >
             {loading ? "Processing…" : "Subscribe"}
           </button>
+
+          <div className="mt-3">
+            <InternationalPaymentsRequest initialEmail={email} />
+          </div>
 
           {err && <p className="mt-3 text-sm text-red-500">{err}</p>}
 

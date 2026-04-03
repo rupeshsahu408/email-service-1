@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ensureRazorpayCheckout } from "@/lib/razorpay-checkout";
+import { InternationalPaymentsRequest } from "@/components/international-payments-request";
 
 declare global {
   interface Window {
@@ -541,6 +542,8 @@ export function UpgradePage({
                     {loadingPlan === "business" ? "Processing…" : "Upgrade to Business"}
                   </button>
                 )}
+
+                <InternationalPaymentsRequest initialEmail={email} />
               </div>
             </div>
 
