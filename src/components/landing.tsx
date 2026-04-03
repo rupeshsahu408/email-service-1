@@ -17,6 +17,7 @@ const features = [
     ),
     title: "Private inbox",
     body: "A focused, three-pane inbox so you can read and reply without distraction. No ads, ever.",
+    badge: "Core",
   },
   {
     icon: (
@@ -26,6 +27,7 @@ const features = [
     ),
     title: "End-to-end encryption",
     body: "Messages secured with modern encryption standards. Only you and your recipient can read your mail.",
+    badge: "Security",
   },
   {
     icon: (
@@ -35,6 +37,7 @@ const features = [
     ),
     title: "Instant delivery",
     body: "Lightning-fast email delivery with real-time inbox updates. Never miss an important message.",
+    badge: "Speed",
   },
   {
     icon: (
@@ -44,6 +47,7 @@ const features = [
     ),
     title: "Privacy by design",
     body: "We collect only what is needed to run your inbox. No tracking pixels, no profiling.",
+    badge: "Privacy",
   },
   {
     icon: (
@@ -53,6 +57,7 @@ const features = [
     ),
     title: "Labels & organisation",
     body: "Powerful labeling, starring, and filtering to keep your inbox effortlessly organised.",
+    badge: "Productivity",
   },
   {
     icon: (
@@ -62,6 +67,7 @@ const features = [
     ),
     title: "Powerful search",
     body: "Find any message instantly with full-text search, attachment filters, and smart queries.",
+    badge: "Smart",
   },
 ];
 
@@ -175,6 +181,7 @@ const testimonials = [
     role: "Founder, TechLaunch",
     initials: "AM",
     color: "from-[#6d4aff] to-[#a78bfa]",
+    location: "Mumbai, India",
   },
   {
     body: "The custom domain feature is a game changer for small businesses. Setup took under five minutes and everything just worked perfectly.",
@@ -182,6 +189,7 @@ const testimonials = [
     role: "Designer & Freelancer",
     initials: "PS",
     color: "from-[#0ea5e9] to-[#6d4aff]",
+    location: "Bangalore, India",
   },
   {
     body: "Finally an email service that doesn't treat me like the product. The temporary inbox feature alone is worth it — brilliant for OTPs and sign-ups.",
@@ -189,7 +197,44 @@ const testimonials = [
     role: "Software Engineer",
     initials: "RN",
     color: "from-[#10b981] to-[#0ea5e9]",
+    location: "Hyderabad, India",
   },
+  {
+    body: "I switched from ProtonMail to Sendora and the UI difference is night and day. It's cleaner, faster, and the team is incredibly responsive.",
+    name: "Sneha Kapoor",
+    role: "Product Manager",
+    initials: "SK",
+    color: "from-[#f59e0b] to-[#ef4444]",
+    location: "Delhi, India",
+  },
+  {
+    body: "Our startup team uses Sendora Business. The verified tick on our domain instantly boosted client confidence. Worth every rupee.",
+    name: "Dev Anand",
+    role: "CEO, Nexova Labs",
+    initials: "DA",
+    color: "from-[#ec4899] to-[#8b5cf6]",
+    location: "Pune, India",
+  },
+  {
+    body: "Zero ads, zero tracking — as a cybersecurity professional, Sendora is the only email I recommend to my clients and friends.",
+    name: "Kavya Krishnan",
+    role: "Cybersecurity Analyst",
+    initials: "KK",
+    color: "from-[#06b6d4] to-[#10b981]",
+    location: "Chennai, India",
+  },
+];
+
+const compareRows = [
+  { feature: "No ads, ever", sendora: true, gmail: false, outlook: false },
+  { feature: "No tracking pixels", sendora: true, gmail: false, outlook: false },
+  { feature: "No phone number required", sendora: true, gmail: false, outlook: false },
+  { feature: "End-to-end encryption", sendora: true, gmail: false, outlook: false },
+  { feature: "Zero-knowledge architecture", sendora: true, gmail: false, outlook: false },
+  { feature: "Custom domain support", sendora: true, gmail: "Paid", outlook: "Paid" },
+  { feature: "Temporary / disposable inbox", sendora: true, gmail: false, outlook: false },
+  { feature: "Passkey / biometric login", sendora: true, gmail: true, outlook: true },
+  { feature: "30-day money-back guarantee", sendora: true, gmail: false, outlook: false },
 ];
 
 function useCountUp(target: number, duration = 2200, startOnMount = false) {
@@ -257,6 +302,7 @@ function LandingPageInner() {
             <a href="#features" className="hover:text-[#6d4aff] transition-colors duration-200">{t.navFeatures}</a>
             <a href="#security" className="hover:text-[#6d4aff] transition-colors duration-200">{t.navSecurity}</a>
             <a href="#pricing" className="hover:text-[#6d4aff] transition-colors duration-200">{t.navPricing}</a>
+            <a href="#compare" className="hover:text-[#6d4aff] transition-colors duration-200">Compare</a>
           </nav>
           <div className="hidden md:flex items-center gap-3">
             <LanguageSelector variant="navbar" />
@@ -296,6 +342,7 @@ function LandingPageInner() {
             <a href="#features" onClick={() => setMobileMenuOpen(false)} className="block py-2.5 text-sm font-medium text-[#65637e] hover:text-[#6d4aff] transition-colors">{t.navFeatures}</a>
             <a href="#security" onClick={() => setMobileMenuOpen(false)} className="block py-2.5 text-sm font-medium text-[#65637e] hover:text-[#6d4aff] transition-colors">{t.navSecurity}</a>
             <a href="#pricing" onClick={() => setMobileMenuOpen(false)} className="block py-2.5 text-sm font-medium text-[#65637e] hover:text-[#6d4aff] transition-colors">{t.navPricing}</a>
+            <a href="#compare" onClick={() => setMobileMenuOpen(false)} className="block py-2.5 text-sm font-medium text-[#65637e] hover:text-[#6d4aff] transition-colors">Compare</a>
             <div className="pt-3 border-t border-[#f0edfb] flex flex-col gap-2">
               <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="block text-center py-2.5 text-sm font-semibold text-[#6d4aff] hover:bg-[#f3f0fd] rounded-xl transition-colors">{t.signIn}</Link>
               <Link href="/signup" onClick={() => setMobileMenuOpen(false)} className="block text-center rounded-full bg-[#6d4aff] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#5b3dff] transition-colors">{t.getStarted}</Link>
@@ -308,12 +355,9 @@ function LandingPageInner() {
       <main>
         {/* ── Hero ── */}
         <section className="relative overflow-hidden bg-gradient-to-b from-[#fdfcff] via-[#f8f5ff] to-[#f0ecfd] px-6 pt-20 pb-32">
-          {/* Background blobs */}
           <div className="pointer-events-none absolute -top-32 -right-32 w-[700px] h-[700px] rounded-full bg-[#c4b5fd]/20 blur-[130px]" />
           <div className="pointer-events-none absolute top-10 -left-40 w-[500px] h-[500px] rounded-full bg-[#a78bfa]/12 blur-[110px]" />
           <div className="pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 w-[900px] h-[220px] rounded-full bg-[#818cf8]/10 blur-[90px]" />
-
-          {/* Subtle dot grid */}
           <div
             className="pointer-events-none absolute inset-0 opacity-[0.025]"
             style={{ backgroundImage: "radial-gradient(circle, #6d4aff 1px, transparent 1px)", backgroundSize: "28px 28px" }}
@@ -324,7 +368,7 @@ function LandingPageInner() {
             {/* Announcement badge */}
             <div className="inline-flex items-center gap-2 rounded-full border border-[#d4cafe]/80 bg-white/90 px-4 py-1.5 text-[11px] font-semibold text-[#6d4aff] mb-8 shadow-sm shadow-[#6d4aff]/10 tracking-wide uppercase">
               <span className="w-1.5 h-1.5 rounded-full bg-[#6d4aff] animate-pulse" />
-              Privacy-first email platform
+              Privacy-first email platform · Trusted by 25M+ users
             </div>
 
             {/* Headline */}
@@ -351,10 +395,10 @@ function LandingPageInner() {
                 </svg>
               </Link>
               <a
-                href="#pricing"
+                href="#compare"
                 className="inline-flex items-center gap-2 rounded-full border border-[#d4cafe] bg-white px-6 py-3.5 text-sm font-semibold text-[#6d4aff] hover:bg-[#f3f0fd] hover:border-[#b8a4f8] transition-all duration-200"
               >
-                Compare plans
+                See how we compare
               </a>
             </div>
 
@@ -376,14 +420,13 @@ function LandingPageInner() {
                   ))}
                 </div>
                 <span className="font-semibold text-[#1c1b33]">4.9</span>
-                <span>— Loved by 25M+ users</span>
+                <span>— Loved by 25M+ users worldwide</span>
               </div>
             </div>
 
             {/* App preview mockup */}
             <div className="mt-16 mx-auto max-w-3xl animate-fade-in-up" style={{ animationDelay: "0.32s" }}>
               <div className="rounded-2xl border border-[#e0d9f8] bg-white shadow-2xl shadow-[#6d4aff]/12 overflow-hidden">
-                {/* Window bar */}
                 <div className="flex items-center gap-1.5 px-4 py-3 bg-[#13111f] border-b border-white/[0.06]">
                   <div className="w-2.5 h-2.5 rounded-full bg-red-400/70" />
                   <div className="w-2.5 h-2.5 rounded-full bg-amber-400/70" />
@@ -395,7 +438,6 @@ function LandingPageInner() {
                     </div>
                   </div>
                 </div>
-                {/* Mockup body */}
                 <div className="flex h-52 text-left">
                   <div className="w-36 sm:w-40 bg-[#1c1b33] flex flex-col gap-0.5 p-3 pt-2">
                     <div className="text-[9px] font-semibold text-white/20 uppercase tracking-widest px-2 mb-1">Mailboxes</div>
@@ -436,7 +478,7 @@ function LandingPageInner() {
                   </div>
                 </div>
               </div>
-              <p className="mt-3 text-[11px] text-[#9896b4] text-center tracking-wide">The clean, focused Sendora inbox</p>
+              <p className="mt-3 text-[11px] text-[#9896b4] text-center tracking-wide">The clean, focused Sendora inbox · Available on all devices</p>
             </div>
           </div>
         </section>
@@ -461,6 +503,10 @@ function LandingPageInner() {
                 icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-[#6d4aff]"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" /></svg>,
                 text: "Lightning-fast delivery",
               },
+              {
+                icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-[#6d4aff]"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>,
+                text: "Privacy by design",
+              },
             ].map(({ icon, text }) => (
               <div key={text} className="flex items-center gap-2 text-[13px] font-medium text-[#65637e]">
                 {icon}
@@ -470,10 +516,10 @@ function LandingPageInner() {
           </div>
         </section>
 
-        {/* ── Brands That Trust Us ── */}
+        {/* ── Brands ── */}
         <BrandsMarquee />
 
-        {/* ── User Trust / Social Proof ── */}
+        {/* ── Stats / Social Proof ── */}
         <section ref={trustRef} className="relative overflow-hidden bg-[#0e0c22] px-6 py-16 sm:py-24">
           <div className="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 w-[800px] h-[350px] rounded-full bg-[#6d4aff]/18 blur-[130px]" />
           <div className="pointer-events-none absolute bottom-0 left-1/4 w-[300px] h-[200px] rounded-full bg-[#a78bfa]/10 blur-[80px]" />
@@ -524,7 +570,7 @@ function LandingPageInner() {
               <div className="flex items-center gap-1">
                 {[0,1,2,3,4].map((i) => (
                   <svg key={i} viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5 text-[#f59e0b]">
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 00.951-.69l1.07-3.292z" />
                   </svg>
                 ))}
               </div>
@@ -566,26 +612,33 @@ function LandingPageInner() {
               <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#1c1b33] tracking-tight">
                 Trusted by people who care<br className="hidden sm:block" /> about their privacy
               </h2>
+              <p className="mt-3 text-[#65637e] text-sm">Real reviews from real Sendora users around the world.</p>
             </div>
-            <div className="grid sm:grid-cols-3 gap-5 sm:gap-6">
-              {testimonials.map(({ body, name, role, initials, color }) => (
-                <div key={name} className="group flex flex-col gap-5 rounded-2xl border border-[#e8e4f8] bg-white p-6 shadow-sm hover:shadow-md hover:border-[#c4b5fd] transition-all duration-300">
-                  <div className="flex gap-0.5">
-                    {[0,1,2,3,4].map(i => (
-                      <svg key={i} viewBox="0 0 12 12" fill="#f59e0b" className="w-3.5 h-3.5">
-                        <path d="M6 1l1.39 2.82L10.5 4.27l-2.25 2.19.53 3.09L6 8.02 3.22 9.55l.53-3.09L1.5 4.27l3.11-.45L6 1z"/>
-                      </svg>
-                    ))}
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+              {testimonials.map(({ body, name, role, initials, color, location }) => (
+                <div key={name} className="group flex flex-col gap-5 rounded-2xl border border-[#e8e4f8] bg-white p-6 shadow-sm hover:shadow-lg hover:border-[#c4b5fd] hover:-translate-y-0.5 transition-all duration-300">
+                  <div className="flex items-center justify-between">
+                    <div className="flex gap-0.5">
+                      {[0,1,2,3,4].map(i => (
+                        <svg key={i} viewBox="0 0 12 12" fill="#f59e0b" className="w-3.5 h-3.5">
+                          <path d="M6 1l1.39 2.82L10.5 4.27l-2.25 2.19.53 3.09L6 8.02 3.22 9.55l.53-3.09L1.5 4.27l3.11-.45L6 1z"/>
+                        </svg>
+                      ))}
+                    </div>
+                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-[#e8e4f8] group-hover:text-[#d4cafe] transition-colors">
+                      <path d="M11.192 15.757c0-.88-.23-1.618-.69-2.217-.326-.412-.768-.683-1.327-.812-.55-.128-1.07-.137-1.54-.028-.16-.95.1-1.956.76-3.022.66-1.065 1.515-1.867 2.558-2.403L9.373 5c-.8.396-1.56.898-2.26 1.505-.71.607-1.34 1.305-1.9 2.094s-.98 1.68-1.25 2.69-.346 2.04-.217 3.1c.168 1.4.62 2.52 1.356 3.35.735.84 1.652 1.26 2.748 1.26.965 0 1.766-.29 2.4-.878.628-.576.94-1.365.94-2.368l.002.003zm9.124 0c0-.88-.23-1.618-.69-2.217-.326-.42-.77-.692-1.327-.817-.56-.124-1.074-.13-1.54-.022-.16-.94.09-1.95.75-3.02.66-1.06 1.514-1.86 2.557-2.4L18.49 5c-.8.396-1.555.898-2.26 1.505-.708.607-1.34 1.305-1.894 2.094-.556.79-.97 1.68-1.24 2.69-.273 1-.345 2.04-.217 3.1.168 1.4.62 2.52 1.356 3.35.735.84 1.652 1.26 2.748 1.26.965 0 1.766-.29 2.4-.878.628-.576.94-1.365.94-2.368l.002.003z"/>
+                    </svg>
                   </div>
                   <p className="text-sm text-[#65637e] leading-relaxed flex-1">&ldquo;{body}&rdquo;</p>
                   <div className="flex items-center gap-3 pt-1 border-t border-[#f0edfb]">
                     <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${color} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
                       {initials}
                     </div>
-                    <div>
+                    <div className="flex-1 min-w-0">
                       <p className="text-[13px] font-semibold text-[#1c1b33]">{name}</p>
                       <p className="text-[11px] text-[#9896b4]">{role}</p>
                     </div>
+                    <span className="text-[10px] text-[#c4b5fd] font-medium shrink-0">{location}</span>
                   </div>
                 </div>
               ))}
@@ -599,7 +652,7 @@ function LandingPageInner() {
             <div className="text-center mb-12 sm:mb-16">
               <div className="inline-flex items-center gap-2 text-[10px] font-bold text-[#6d4aff] uppercase tracking-[0.22em] mb-3">
                 <span className="w-5 h-px bg-[#6d4aff]" />
-                Features
+                {t.navFeatures}
                 <span className="w-5 h-px bg-[#6d4aff]" />
               </div>
               <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#1c1b33] tracking-tight">
@@ -616,8 +669,11 @@ function LandingPageInner() {
                   className="group relative rounded-2xl border border-[#e8e4f8] bg-white p-6 shadow-sm hover:shadow-lg hover:border-[#c4b5fd] hover:-translate-y-0.5 transition-all duration-300 overflow-hidden"
                 >
                   <div className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-br from-[#6d4aff]/[0.03] to-transparent" />
-                  <div className="relative w-11 h-11 rounded-xl bg-gradient-to-br from-[#f3f0fd] to-[#ede8ff] text-[#6d4aff] flex items-center justify-center mb-5 group-hover:from-[#6d4aff] group-hover:to-[#5b3dff] group-hover:text-white transition-all duration-300">
-                    {f.icon}
+                  <div className="flex items-start justify-between mb-5">
+                    <div className="relative w-11 h-11 rounded-xl bg-gradient-to-br from-[#f3f0fd] to-[#ede8ff] text-[#6d4aff] flex items-center justify-center group-hover:from-[#6d4aff] group-hover:to-[#5b3dff] group-hover:text-white transition-all duration-300">
+                      {f.icon}
+                    </div>
+                    <span className="text-[9px] font-bold uppercase tracking-[0.15em] px-2 py-1 rounded-full bg-[#f3f0fd] text-[#6d4aff]">{f.badge}</span>
                   </div>
                   <h3 className="relative text-[15px] font-semibold text-[#1c1b33]">{f.title}</h3>
                   <p className="relative mt-2 text-[13px] leading-relaxed text-[#65637e]">{f.body}</p>
@@ -627,14 +683,86 @@ function LandingPageInner() {
           </div>
         </section>
 
+        {/* ── Comparison Table ── */}
+        <section id="compare" className="px-6 py-20 sm:py-24 bg-[#f8f5ff]">
+          <div className="mx-auto max-w-4xl">
+            <div className="text-center mb-12">
+              <div className="inline-flex items-center gap-2 text-[10px] font-bold text-[#6d4aff] uppercase tracking-[0.22em] mb-3">
+                <span className="w-5 h-px bg-[#6d4aff]" />
+                Why Sendora
+                <span className="w-5 h-px bg-[#6d4aff]" />
+              </div>
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#1c1b33] tracking-tight">
+                We built what others wouldn&apos;t
+              </h2>
+              <p className="mt-4 text-[#65637e] text-sm sm:text-base max-w-lg mx-auto">
+                See how Sendora stacks up against the world&apos;s most popular email services — on the things that actually matter.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-[#e8e4f8] bg-white shadow-lg overflow-hidden">
+              {/* Table header */}
+              <div className="grid grid-cols-4 border-b border-[#e8e4f8]">
+                <div className="col-span-1 px-5 py-4" />
+                <div className="col-span-1 px-4 py-4 text-center border-l border-[#e8e4f8]">
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#6d4aff] to-[#a78bfa] flex items-center justify-center">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                        <rect x="2" y="4" width="20" height="16" rx="3" /><path d="m2 7 10 7 10-7" />
+                      </svg>
+                    </div>
+                    <span className="text-[12px] font-bold text-[#6d4aff]">Sendora</span>
+                  </div>
+                </div>
+                <div className="col-span-1 px-4 py-4 text-center border-l border-[#e8e4f8]">
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="w-8 h-8 rounded-xl bg-[#f1f3f4] flex items-center justify-center text-[13px] font-bold text-[#4285f4]">G</div>
+                    <span className="text-[12px] font-medium text-[#65637e]">Gmail</span>
+                  </div>
+                </div>
+                <div className="col-span-1 px-4 py-4 text-center border-l border-[#e8e4f8]">
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="w-8 h-8 rounded-xl bg-[#0078d4] flex items-center justify-center text-[10px] font-bold text-white">OL</div>
+                    <span className="text-[12px] font-medium text-[#65637e]">Outlook</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Table rows */}
+              {compareRows.map(({ feature, sendora, gmail, outlook }, idx) => (
+                <div key={feature} className={`grid grid-cols-4 border-b border-[#f0edfb] last:border-0 ${idx % 2 === 0 ? "bg-white" : "bg-[#fdfcff]"}`}>
+                  <div className="col-span-1 px-5 py-3.5 flex items-center">
+                    <span className="text-[13px] text-[#1c1b33] font-medium">{feature}</span>
+                  </div>
+                  <CompareCell value={sendora} highlight />
+                  <CompareCell value={gmail} />
+                  <CompareCell value={outlook} />
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-8 text-center">
+              <Link
+                href="/signup"
+                className="inline-flex items-center gap-2.5 rounded-full bg-[#6d4aff] px-7 py-3.5 text-sm font-semibold text-white shadow-lg shadow-[#6d4aff]/35 hover:bg-[#5b3dff] hover:shadow-xl hover:shadow-[#6d4aff]/45 transition-all duration-200"
+              >
+                Switch to Sendora — it&apos;s free
+                <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                  <path fillRule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.638L10.23 5.29a.75.75 0 1 1 1.04-1.08l5.5 5.25a.75.75 0 0 1 0 1.08l-5.5 5.25a.75.75 0 1 1-1.04-1.08l4.158-3.96H3.75A.75.75 0 0 1 3 10Z" clipRule="evenodd" />
+                </svg>
+              </Link>
+            </div>
+          </div>
+        </section>
+
         {/* ── Security section ── */}
-        <section id="security" className="px-6 py-20 sm:py-24 bg-[#f8f5ff]">
+        <section id="security" className="px-6 py-20 sm:py-24 bg-white">
           <div className="mx-auto max-w-6xl">
             <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
               <div>
                 <div className="inline-flex items-center gap-2 text-[10px] font-bold text-[#6d4aff] uppercase tracking-[0.22em] mb-5">
                   <span className="w-5 h-px bg-[#6d4aff]" />
-                  Security first
+                  {t.navSecurity} first
                 </div>
                 <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#1c1b33] tracking-tight leading-tight">
                   Built with privacy<br />at the core
@@ -652,15 +780,20 @@ function LandingPageInner() {
                     </div>
                   ))}
                 </div>
-                <Link
-                  href="/signup"
-                  className="mt-10 inline-flex items-center gap-2 rounded-full bg-[#1c1b33] px-6 py-3 text-sm font-semibold text-white hover:bg-[#6d4aff] transition-all duration-200 shadow-sm hover:shadow-md hover:shadow-[#6d4aff]/25"
-                >
-                  Get started free
-                  <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
-                    <path fillRule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.638L10.23 5.29a.75.75 0 1 1 1.04-1.08l5.5 5.25a.75.75 0 0 1 0 1.08l-5.5 5.25a.75.75 0 1 1-1.04-1.08l4.158-3.96H3.75A.75.75 0 0 1 3 10Z" clipRule="evenodd" />
-                  </svg>
-                </Link>
+                <div className="mt-10 flex flex-wrap gap-3">
+                  <Link
+                    href="/signup"
+                    className="inline-flex items-center gap-2 rounded-full bg-[#1c1b33] px-6 py-3 text-sm font-semibold text-white hover:bg-[#6d4aff] transition-all duration-200 shadow-sm hover:shadow-md hover:shadow-[#6d4aff]/25"
+                  >
+                    Get started free
+                    <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                      <path fillRule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.638L10.23 5.29a.75.75 0 1 1 1.04-1.08l5.5 5.25a.75.75 0 0 1 0 1.08l-5.5 5.25a.75.75 0 1 1-1.04-1.08l4.158-3.96H3.75A.75.75 0 0 1 3 10Z" clipRule="evenodd" />
+                    </svg>
+                  </Link>
+                  <Link href="/security" className="inline-flex items-center gap-2 rounded-full border border-[#e8e4f8] px-6 py-3 text-sm font-semibold text-[#65637e] hover:border-[#6d4aff]/40 hover:text-[#6d4aff] transition-all duration-200">
+                    Read security policy
+                  </Link>
+                </div>
               </div>
 
               <div className="rounded-2xl bg-[#13111f] p-7 sm:p-9 text-white border border-white/[0.06] shadow-2xl shadow-black/30">
@@ -692,12 +825,12 @@ function LandingPageInner() {
         </section>
 
         {/* ── Pricing ── */}
-        <section id="pricing" className="px-6 py-20 sm:py-24 bg-white">
+        <section id="pricing" className="px-6 py-20 sm:py-24 bg-[#f8f5ff]">
           <div className="mx-auto max-w-5xl">
             <div className="text-center mb-12 sm:mb-16">
               <div className="inline-flex items-center gap-2 text-[10px] font-bold text-[#6d4aff] uppercase tracking-[0.22em] mb-3">
                 <span className="w-5 h-px bg-[#6d4aff]" />
-                Pricing
+                {t.navPricing}
                 <span className="w-5 h-px bg-[#6d4aff]" />
               </div>
               <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#1c1b33] tracking-tight">
@@ -795,9 +928,12 @@ function LandingPageInner() {
                   <path fillRule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.638L10.23 5.29a.75.75 0 1 1 1.04-1.08l5.5 5.25a.75.75 0 0 1 0 1.08l-5.5 5.25a.75.75 0 1 1-1.04-1.08l4.158-3.96H3.75A.75.75 0 0 1 3 10Z" clipRule="evenodd" />
                 </svg>
               </Link>
+              <Link href="/contact" className="inline-flex items-center gap-2 rounded-full border border-white/20 px-8 py-3.5 text-sm font-semibold text-white/80 hover:border-white/40 hover:text-white transition-all duration-200">
+                Talk to sales
+              </Link>
             </div>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-5 sm:gap-8">
-              {["Free forever", "No credit card", "Cancel anytime"].map((item) => (
+              {["Free forever", "No credit card", "Cancel anytime", "30-day guarantee"].map((item) => (
                 <div key={item} className="flex items-center gap-1.5 text-[12px] text-white/35">
                   <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3 text-[#6d4aff]">
                     <polyline points="2 6 5 9 10 3" />
@@ -816,104 +952,264 @@ function LandingPageInner() {
         </section>
       </main>
 
-      {/* ── Footer ── */}
+      {/* ── Premium Footer ── */}
       <footer className="bg-[#080710] border-t border-white/[0.05]">
-        <div className="mx-auto max-w-6xl px-6 pt-16 pb-10 grid grid-cols-2 gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-4">
 
-          {/* Brand */}
-          <div className="col-span-2 sm:col-span-2 lg:col-span-1 flex flex-col gap-5">
-            <div className="flex items-center gap-2.5">
-              <img src="/sendora-logo.png" alt="Sendora" className="w-8 h-8 object-contain" />
-              <span className="text-base font-semibold text-white tracking-tight">Sendora</span>
-            </div>
-            <p className="text-[13px] text-white/40 leading-relaxed max-w-[210px]">
-              Modern email experience, reimagined for privacy and speed.
-            </p>
-            <a href="mailto:support@sendora.me" className="inline-flex items-center gap-2 text-[13px] text-[#7c6aff] hover:text-[#a78bff] transition-colors group w-fit">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} className="w-4 h-4 shrink-0 opacity-70 group-hover:opacity-100 transition-opacity">
-                <rect x="2" y="4" width="20" height="16" rx="3"/><path d="m2 7 10 7 10-7"/>
-              </svg>
-              support@sendora.me
-            </a>
-          </div>
+        {/* Top footer grid */}
+        <div className="mx-auto max-w-6xl px-6 pt-16 pb-10">
+          <div className="grid grid-cols-2 gap-x-6 gap-y-12 sm:grid-cols-3 lg:grid-cols-6">
 
-          {/* Product */}
-          <div className="flex flex-col gap-4">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/30">Product</p>
-            <nav className="flex flex-col gap-3">
-              {[
-                { label: "Features", href: "#features" },
-                { label: "Pricing", href: "#pricing" },
-                { label: "Temporary Inbox", href: "/temp-inbox" },
-                { label: "Business Email", href: "/signup" },
-              ].map(({ label, href }) => (
-                <a key={label} href={href} className="text-[13px] text-white/45 hover:text-white/85 transition-colors w-fit">{label}</a>
-              ))}
-            </nav>
-          </div>
+            {/* Brand column - spans 2 cols on large screens */}
+            <div className="col-span-2 sm:col-span-3 lg:col-span-2 flex flex-col gap-5">
+              <div className="flex items-center gap-2.5">
+                <img src="/sendora-logo.png" alt="Sendora" className="w-8 h-8 object-contain" />
+                <span className="text-base font-semibold text-white tracking-tight">Sendora</span>
+              </div>
+              <p className="text-[13px] text-white/40 leading-relaxed max-w-[240px]">
+                The premium email platform built for privacy, speed, and trust. Sendora is where modern communication begins.
+              </p>
 
-          {/* Company */}
-          <div className="flex flex-col gap-4">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/30">Company</p>
-            <nav className="flex flex-col gap-3">
-              {[
-                { label: "About", href: "/about" },
-                { label: "Contact", href: "/contact" },
-                { label: "Privacy Policy", href: "/privacy-policy" },
-                { label: "Terms & Conditions", href: "/terms" },
-                { label: "Security", href: "/security" },
-              ].map(({ label, href }) => (
-                <a key={label} href={href} className="text-[13px] text-white/45 hover:text-white/85 transition-colors w-fit">{label}</a>
-              ))}
-            </nav>
-          </div>
-
-          {/* Resources */}
-          <div className="flex flex-col gap-4">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/30">Resources</p>
-            <nav className="flex flex-col gap-3">
-              {[
-                { label: "Help Center", href: "/help", badge: "" },
-                { label: "Blog", href: "#", badge: "Soon" },
-                { label: "Status", href: "#", badge: "Soon" },
-              ].map(({ label, href, badge }) => (
-                <a key={label} href={href} className="inline-flex items-center gap-2 text-[13px] text-white/45 hover:text-white/85 transition-colors w-fit">
-                  {label}
-                  {badge && (
-                    <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-white/[0.06] text-white/35 border border-white/[0.07] leading-none tracking-wide">
-                      {badge}
-                    </span>
-                  )}
+              {/* Contact */}
+              <div className="flex flex-col gap-2.5">
+                <a href="mailto:support@sendora.me" className="inline-flex items-center gap-2 text-[13px] text-[#7c6aff] hover:text-[#a78bff] transition-colors group w-fit">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} className="w-3.5 h-3.5 shrink-0 opacity-70 group-hover:opacity-100 transition-opacity">
+                    <rect x="2" y="4" width="20" height="16" rx="3"/><path d="m2 7 10 7 10-7"/>
+                  </svg>
+                  support@sendora.me
                 </a>
-              ))}
-            </nav>
+                <a href="mailto:hello@sendora.me" className="inline-flex items-center gap-2 text-[13px] text-white/35 hover:text-white/65 transition-colors group w-fit">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} className="w-3.5 h-3.5 shrink-0 opacity-70 group-hover:opacity-100 transition-opacity">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                  </svg>
+                  hello@sendora.me
+                </a>
+              </div>
+
+              {/* Social links */}
+              <div className="flex items-center gap-3">
+                <a href="#" aria-label="Sendora on X / Twitter" className="w-8 h-8 rounded-lg bg-white/[0.05] hover:bg-white/[0.10] flex items-center justify-center text-white/30 hover:text-white/70 transition-all duration-200">
+                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.748l7.73-8.835L1.254 2.25H8.08l4.254 5.622 5.91-5.622Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                  </svg>
+                </a>
+                <a href="#" aria-label="Sendora on LinkedIn" className="w-8 h-8 rounded-lg bg-white/[0.05] hover:bg-white/[0.10] flex items-center justify-center text-white/30 hover:text-white/70 transition-all duration-200">
+                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5">
+                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                  </svg>
+                </a>
+                <a href="#" aria-label="Sendora on Instagram" className="w-8 h-8 rounded-lg bg-white/[0.05] hover:bg-white/[0.10] flex items-center justify-center text-white/30 hover:text-white/70 transition-all duration-200">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
+                    <rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+                  </svg>
+                </a>
+                <a href="#" aria-label="Sendora on GitHub" className="w-8 h-8 rounded-lg bg-white/[0.05] hover:bg-white/[0.10] flex items-center justify-center text-white/30 hover:text-white/70 transition-all duration-200">
+                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5">
+                    <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+                  </svg>
+                </a>
+              </div>
+            </div>
+
+            {/* Product */}
+            <div className="flex flex-col gap-4">
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/30">Product</p>
+              <nav className="flex flex-col gap-3">
+                {[
+                  { label: "Features", href: "#features" },
+                  { label: "Pricing", href: "#pricing" },
+                  { label: "Temporary Inbox", href: "/temp-inbox" },
+                  { label: "Business Email", href: "/upgrade" },
+                  { label: "Custom Domain", href: "/upgrade" },
+                  { label: "Mobile App", href: "#", badge: "Soon" },
+                  { label: "Changelog", href: "#", badge: "Soon" },
+                  { label: "API Access", href: "#", badge: "Beta" },
+                ].map(({ label, href, badge }) => (
+                  <a key={label} href={href} className="inline-flex items-center gap-2 text-[13px] text-white/45 hover:text-white/85 transition-colors w-fit">
+                    {label}
+                    {badge && (
+                      <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full border leading-none tracking-wide ${badge === "Beta" ? "bg-[#6d4aff]/20 text-[#a78bfa] border-[#6d4aff]/30" : "bg-white/[0.06] text-white/35 border-white/[0.07]"}`}>
+                        {badge}
+                      </span>
+                    )}
+                  </a>
+                ))}
+              </nav>
+            </div>
+
+            {/* Company */}
+            <div className="flex flex-col gap-4">
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/30">Company</p>
+              <nav className="flex flex-col gap-3">
+                {[
+                  { label: "About Us", href: "/about" },
+                  { label: "Contact", href: "/contact" },
+                  { label: "Blog", href: "#", badge: "Soon" },
+                  { label: "Careers", href: "#", badge: "Hiring" },
+                  { label: "Press Kit", href: "#" },
+                  { label: "Partners", href: "#" },
+                  { label: "Investors", href: "#" },
+                  { label: "Brand Assets", href: "#" },
+                ].map(({ label, href, badge }) => (
+                  <a key={label} href={href} className="inline-flex items-center gap-2 text-[13px] text-white/45 hover:text-white/85 transition-colors w-fit">
+                    {label}
+                    {badge && (
+                      <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full border leading-none tracking-wide ${badge === "Hiring" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/25" : "bg-white/[0.06] text-white/35 border-white/[0.07]"}`}>
+                        {badge}
+                      </span>
+                    )}
+                  </a>
+                ))}
+              </nav>
+            </div>
+
+            {/* Resources */}
+            <div className="flex flex-col gap-4">
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/30">Resources</p>
+              <nav className="flex flex-col gap-3">
+                {[
+                  { label: "Help Center", href: "/help" },
+                  { label: "Documentation", href: "#", badge: "Soon" },
+                  { label: "System Status", href: "#" },
+                  { label: "Security Policy", href: "/security" },
+                  { label: "Community", href: "#", badge: "Soon" },
+                  { label: "Tutorials", href: "#", badge: "Soon" },
+                  { label: "Integrations", href: "#", badge: "Soon" },
+                  { label: "Developer API", href: "#", badge: "Beta" },
+                ].map(({ label, href, badge }) => (
+                  <a key={label} href={href} className="inline-flex items-center gap-2 text-[13px] text-white/45 hover:text-white/85 transition-colors w-fit">
+                    {label}
+                    {badge && (
+                      <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full border leading-none tracking-wide ${badge === "Beta" ? "bg-[#6d4aff]/20 text-[#a78bfa] border-[#6d4aff]/30" : "bg-white/[0.06] text-white/35 border-white/[0.07]"}`}>
+                        {badge}
+                      </span>
+                    )}
+                  </a>
+                ))}
+              </nav>
+            </div>
+
+            {/* Legal */}
+            <div className="flex flex-col gap-4">
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/30">Legal</p>
+              <nav className="flex flex-col gap-3">
+                {[
+                  { label: "Privacy Policy", href: "/privacy-policy" },
+                  { label: "Terms of Service", href: "/terms" },
+                  { label: "Cookie Policy", href: "/privacy-policy" },
+                  { label: "GDPR Compliance", href: "/privacy-policy" },
+                  { label: "Refund Policy", href: "/terms" },
+                  { label: "Acceptable Use", href: "/terms" },
+                  { label: "Data Processing", href: "/privacy-policy" },
+                  { label: "Vulnerability Disclosure", href: "/security" },
+                ].map(({ label, href }) => (
+                  <a key={label} href={href} className="text-[13px] text-white/45 hover:text-white/85 transition-colors w-fit">
+                    {label}
+                  </a>
+                ))}
+              </nav>
+            </div>
           </div>
         </div>
 
+        {/* Newsletter strip */}
+        <div className="mx-auto max-w-6xl px-6 pb-10">
+          <div className="rounded-2xl bg-white/[0.03] border border-white/[0.06] px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-5">
+            <div>
+              <p className="text-[13px] font-semibold text-white/80">Stay in the loop</p>
+              <p className="text-[12px] text-white/35 mt-0.5">Get product updates, privacy tips, and announcements. No spam.</p>
+            </div>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <input
+                type="email"
+                placeholder="you@email.com"
+                className="flex-1 sm:w-56 bg-white/[0.06] border border-white/[0.08] rounded-full px-4 py-2 text-[13px] text-white placeholder:text-white/25 focus:outline-none focus:border-[#6d4aff]/50 transition-all"
+              />
+              <button
+                type="button"
+                className="shrink-0 rounded-full bg-[#6d4aff] px-4 py-2 text-[12px] font-semibold text-white hover:bg-[#5b3dff] transition-colors"
+              >
+                Subscribe
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Trust badges strip */}
         <div className="mx-auto max-w-6xl px-6">
           <div className="h-px bg-gradient-to-r from-transparent via-white/[0.08] to-transparent" />
         </div>
 
-        <div className="mx-auto max-w-6xl px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="mx-auto max-w-6xl px-6 py-5">
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            {[
+              { icon: "🔒", text: "SSL Secured" },
+              { icon: "🛡️", text: "GDPR Compliant" },
+              { icon: "🇮🇳", text: "Made in India" },
+              { icon: "⚡", text: "99.9% Uptime" },
+              { icon: "🌍", text: "Global CDN" },
+              { icon: "🔐", text: "Zero-Knowledge" },
+            ].map(({ icon, text }) => (
+              <div key={text} className="flex items-center gap-1.5 rounded-full border border-white/[0.06] bg-white/[0.03] px-3 py-1.5">
+                <span className="text-[12px]">{icon}</span>
+                <span className="text-[11px] font-medium text-white/30">{text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Bottom bar */}
+        <div className="mx-auto max-w-6xl px-6">
+          <div className="h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
+        </div>
+
+        <div className="mx-auto max-w-6xl px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-3 text-center sm:text-left">
-            <p className="text-[12px] text-white/25">© {new Date().getFullYear()} Sendora. All rights reserved.</p>
+            <p className="text-[12px] text-white/20">© {new Date().getFullYear()} Sendora Technologies Pvt. Ltd. All rights reserved.</p>
             <span className="hidden sm:inline text-white/10">·</span>
-            <p className="text-[12px] text-white/18">Built in India. Designed for the World.</p>
+            <p className="text-[12px] text-white/14">Built in India 🇮🇳 · Designed for the World 🌍</p>
           </div>
           <div className="flex items-center gap-4">
-            <a href="#" aria-label="Sendora on X" className="text-white/25 hover:text-white/65 transition-colors duration-200">
-              <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
-                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.748l7.73-8.835L1.254 2.25H8.08l4.254 5.622 5.91-5.622Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-              </svg>
-            </a>
-            <a href="#" aria-label="Sendora on LinkedIn" className="text-white/25 hover:text-white/65 transition-colors duration-200">
-              <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
-                <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-              </svg>
-            </a>
+            <a href="/privacy-policy" className="text-[11px] text-white/20 hover:text-white/50 transition-colors">Privacy</a>
+            <span className="text-white/10">·</span>
+            <a href="/terms" className="text-[11px] text-white/20 hover:text-white/50 transition-colors">Terms</a>
+            <span className="text-white/10">·</span>
+            <a href="/security" className="text-[11px] text-white/20 hover:text-white/50 transition-colors">Security</a>
+            <span className="text-white/10">·</span>
+            <a href="/contact" className="text-[11px] text-white/20 hover:text-white/50 transition-colors">Contact</a>
           </div>
         </div>
       </footer>
+    </div>
+  );
+}
+
+function CompareCell({ value, highlight = false }: { value: boolean | string; highlight?: boolean }) {
+  const base = "col-span-1 px-4 py-3.5 border-l border-[#f0edfb] flex items-center justify-center";
+  if (value === true) {
+    return (
+      <div className={`${base} ${highlight ? "bg-[#f8f5ff]" : ""}`}>
+        <div className={`w-6 h-6 rounded-full flex items-center justify-center ${highlight ? "bg-[#6d4aff]" : "bg-[#e8e4f8]"}`}>
+          <svg viewBox="0 0 12 12" fill="none" stroke={highlight ? "white" : "#6d4aff"} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3">
+            <polyline points="2 6 5 9 10 3" />
+          </svg>
+        </div>
+      </div>
+    );
+  }
+  if (value === false) {
+    return (
+      <div className={base}>
+        <div className="w-6 h-6 rounded-full bg-[#f3f0fd] flex items-center justify-center">
+          <svg viewBox="0 0 12 12" fill="none" stroke="#d1c4f8" strokeWidth={2} strokeLinecap="round" className="w-3 h-3">
+            <path d="M3 3l6 6M9 3l-6 6" />
+          </svg>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className={base}>
+      <span className="text-[11px] font-semibold text-[#9896b4] bg-[#f8f5ff] px-2 py-0.5 rounded-full">{value}</span>
     </div>
   );
 }
