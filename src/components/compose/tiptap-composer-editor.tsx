@@ -317,7 +317,7 @@ export const TiptapComposerEditor = forwardRef(function TiptapComposerEditor(
   if (!editor) {
     return (
       <div
-        className={`min-h-[200px] max-h-[420px] overflow-y-auto px-4 py-3 ${composeFontClass}`}
+        className={`min-h-[140px] max-h-[260px] overflow-y-auto px-4 py-3 ${composeFontClass}`}
       >
         Loading editor…
       </div>
@@ -327,7 +327,7 @@ export const TiptapComposerEditor = forwardRef(function TiptapComposerEditor(
   return (
     <EditorContent
       editor={editor}
-      className={`min-h-[200px] max-h-[420px] overflow-y-auto px-4 py-3 text-[14.5px] text-neutral-900 outline-none ${composeFontClass}`}
+      className={`min-h-[140px] max-h-[260px] overflow-y-auto px-4 py-3 text-[14.5px] text-neutral-900 outline-none ${composeFontClass}`}
       style={{ lineHeight: 1.65 }}
     />
   );

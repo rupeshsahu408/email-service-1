@@ -1032,6 +1032,11 @@ export function ComposeClient({
     if (mode === "floating") {
       return {
         width: "min(520px, calc(100vw - 24px))",
+        maxHeight: "min(600px, calc(100vh - 16px))",
+        bottom: 0,
+        right: 16,
+        display: "flex",
+        flexDirection: "column" as const,
         boxShadow:
           "0 -4px 40px rgba(109,74,255,0.18), 0 0 0 1px rgba(0,0,0,0.06)",
       };
@@ -1040,9 +1045,12 @@ export function ComposeClient({
       return {
         width: "min(820px, calc(100vw - 24px))",
         height: "min(86vh, 720px)",
+        maxHeight: "calc(100vh - 16px)",
         top: 40,
         left: "50%",
         transform: "translateX(-50%)",
+        display: "flex",
+        flexDirection: "column" as const,
         boxShadow:
           "0 24px 70px rgba(20,16,60,0.35), 0 0 0 1px rgba(0,0,0,0.06)",
       } as React.CSSProperties;
@@ -1050,6 +1058,8 @@ export function ComposeClient({
     if (mode === "fullscreen") {
       return {
         inset: 0,
+        display: "flex",
+        flexDirection: "column" as const,
       };
     }
     return {};
@@ -1080,6 +1090,9 @@ export function ComposeClient({
       style={
         mode === "fullscreen"
           ? {
+              inset: 0,
+              display: "flex",
+              flexDirection: "column",
               background: "rgba(0,0,0,0.35)",
               border: "none",
             }
@@ -1101,11 +1114,11 @@ export function ComposeClient({
       )}
 
       <div
-        className="relative"
-        style={mode === "fullscreen" ? { width: "100%", height: "100%" } : undefined}
+        className="relative flex flex-col"
+        style={mode === "fullscreen" ? { width: "100%", height: "100%" } : { flex: 1, minHeight: 0 }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-[#6d4aff] to-[#8a68ff]">
+        <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-[#6d4aff] to-[#8a68ff] shrink-0">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-white/40" />
             <span className="text-[13px] font-semibold text-white tracking-tight">New message</span>
@@ -1154,7 +1167,7 @@ export function ComposeClient({
         </div>
 
         {/* Form */}
-        <form onSubmit={sendMail} className="bg-white">
+        <form onSubmit={sendMail} className="bg-white flex flex-col flex-1 min-h-0 overflow-y-auto">
           {storageUsageMessage && storageUsageLevel !== "ok" && (
             <div
               className={`px-4 py-2.5 text-xs border-b border-neutral-200 ${
@@ -1202,7 +1215,7 @@ export function ComposeClient({
             </div>
           )}
 
-          <div className="border-b border-[#ede9fa] px-4 py-3 bg-[#faf8ff]">
+          <div className="border-b border-[#ede9fa] px-4 py-2 bg-[#faf8ff]">
             <label className="flex items-center gap-3 cursor-pointer select-none group">
               <div className="relative shrink-0">
                 <div
@@ -1224,24 +1237,13 @@ export function ComposeClient({
                   className="sr-only"
                 />
               </div>
-              <span className="min-w-0 flex-1">
-                <span className="text-sm font-semibold text-[#1c1b33] flex items-center gap-1.5">
-                  Send anonymously
-                  {sendAnonymously && (
-                    <span className="text-[10px] font-bold text-[#6d4aff] bg-[#6d4aff]/10 px-1.5 py-0.5 rounded-full uppercase tracking-wide">On</span>
-                  )}
-                </span>
-                <p className="text-xs text-[#65637e] mt-0.5 leading-relaxed">
-                  Your identity stays hidden. Replies still reach your inbox via{" "}
-                  <span className="whitespace-nowrap font-mono text-[11px] text-[#44435a] bg-[#f0edff] px-1 rounded">
-                    anon-…@{ANON_EMAIL_DOMAIN_SAMPLE}
-                  </span>
-                </p>
-                {sendAnonymously && isBusiness && outboundMailboxes.length > 0 ? (
-                  <p className="text-[11px] text-[#5b3dff] mt-1 font-medium">
-                    The selected “From” mailbox is not used for anonymous delivery.
-                  </p>
-                ) : null}
+              <span className="min-w-0 flex-1 flex items-center gap-2 flex-wrap">
+                <span className="text-sm font-semibold text-[#1c1b33]">Send anonymously</span>
+                {sendAnonymously ? (
+                  <span className="text-[10px] font-bold text-[#6d4aff] bg-[#6d4aff]/10 px-1.5 py-0.5 rounded-full uppercase tracking-wide">On — identity hidden</span>
+                ) : (
+                  <span className="text-xs text-[#65637e]">— hides your identity</span>
+                )}
               </span>
             </label>
           </div>
@@ -1418,7 +1420,7 @@ export function ComposeClient({
           )}
 
           {/* Footer */}
-          <div className="px-4 py-3 border-t border-[#ede9fa] bg-[#faf8ff]">
+          <div className="px-4 py-3 border-t border-[#ede9fa] bg-[#faf8ff] shrink-0 mt-auto">
             <div className="flex items-center justify-between gap-3 pb-2">
               <div className="flex items-center gap-0.5 flex-wrap">
                 {(
