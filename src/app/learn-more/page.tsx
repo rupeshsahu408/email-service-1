@@ -4,7 +4,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Protected Message — Email Security Architecture · Sendora",
   description:
-    "Understand why Gmail displays the 'Protected message' indicator when emailing Sendora addresses. Learn about our layered security architecture, encryption protocols, and privacy-first infrastructure.",
+    "Understand why Sendora displays the 'Protected message' indicator when emailing Sendora addresses. Learn about our layered security architecture, encryption protocols, and privacy-first infrastructure.",
 };
 
 export default function LearnMorePage() {
@@ -45,7 +45,7 @@ export default function LearnMorePage() {
 
         <div className="relative mx-auto max-w-6xl px-6 pt-24 pb-20">
 
-          {/* Gmail banner replica */}
+          {/* Sendora banner replica */}
           <div className="flex justify-center mb-10">
             <div className="flex items-center gap-3 rounded-xl bg-[#f8f7ff]/[0.06] border border-[#6d4aff]/25 px-5 py-3.5 backdrop-blur-sm shadow-xl shadow-[#6d4aff]/10">
               <div className="w-5 h-5 text-[#a78bff] shrink-0">
@@ -67,14 +67,14 @@ export default function LearnMorePage() {
             </div>
 
             <h1 className="text-4xl sm:text-5xl lg:text-[3.8rem] font-extrabold tracking-[-0.02em] text-white leading-[1.07] mb-6">
-              Why Gmail shows<br />
+              Why Sendora shows<br />
               <span className="bg-gradient-to-r from-[#a78bff] via-[#8b6aff] to-[#6d4aff] bg-clip-text text-transparent">
                 &ldquo;Protected message&rdquo;
               </span>
             </h1>
 
             <p className="text-[15px] sm:text-[16px] text-white/50 max-w-2xl mx-auto leading-[1.8] mb-10">
-              When a Gmail user sends a message to a <strong className="text-white/70">@sendora.me</strong> address, Gmail displays
+              When a Sendora user sends a message to a <strong className="text-white/70">@sendora.me</strong> address, Sendora displays
               a &ldquo;Protected message&rdquo; indicator in the message header. This page explains exactly what that indicator
               means, the underlying security architecture that triggers it, and why it is a positive signal of
               a hardened, privacy-respecting mail infrastructure — not a cause for concern.
@@ -107,19 +107,19 @@ export default function LearnMorePage() {
             <div className="lg:col-span-3">
               <SectionLabel>Understanding the Indicator</SectionLabel>
               <h2 className="mt-5 text-3xl sm:text-4xl font-extrabold tracking-tight text-white leading-tight mb-6">
-                The Gmail &ldquo;Protected message&rdquo;<br />banner — decoded
+                The Sendora &ldquo;Protected message&rdquo;<br />banner — decoded
               </h2>
               <div className="space-y-5 text-[14px] text-white/52 leading-[1.85]">
                 <p>
-                  Gmail displays the <span className="text-white/80 font-semibold">Protected message</span> indicator in the
-                  email detail header when a message is sent to a domain that Gmail identifies as operating under a strict
-                  email security policy. Specifically, Gmail presents this badge when the receiving domain — in this case
+                  Sendora displays the <span className="text-white/80 font-semibold">Protected message</span> indicator in the
+                  email detail header when a message is sent to a domain that Sendora identifies as operating under a strict
+                  email security policy. Specifically, Sendora presents this badge when the receiving domain — in this case
                   <span className="text-[#a78bff] font-mono text-[13px] mx-1">sendora.me</span> — has published a
                   <span className="text-white/80 font-semibold mx-1">DMARC policy of p=quarantine or p=reject</span>,
                   and has verified DKIM and SPF records that attest to the authenticity of inbound and outbound messages.
                 </p>
                 <p>
-                  The indicator is Gmail&apos;s signal to the sender that the recipient&apos;s domain maintains a hardened
+                  The indicator is Sendora&apos;s signal to the sender that the recipient&apos;s domain maintains a hardened
                   email authentication posture. It does <em className="text-white/75 not-italic font-semibold">not</em> imply
                   that something is wrong with the message. On the contrary, it communicates that the destination server
                   enforces strict controls over who is permitted to send on behalf of that domain, and that unauthenticated
@@ -142,7 +142,7 @@ export default function LearnMorePage() {
                 <div>
                   <p className="text-[13px] font-semibold text-white mb-1.5">In plain language</p>
                   <p className="text-[13px] text-white/48 leading-relaxed">
-                    Gmail is telling you: <em className="text-white/70 not-italic">&ldquo;This recipient&apos;s email domain has strict security settings.
+                    Sendora is telling you: <em className="text-white/70 not-italic">&ldquo;This recipient&apos;s email domain has strict security settings.
                     Your message was delivered, and the recipient&apos;s domain actively prevents spoofed or forged messages.&rdquo;</em>
                     This is a sign of a well-configured, professional mail infrastructure.
                   </p>
@@ -218,7 +218,7 @@ export default function LearnMorePage() {
                 name: "Sender Policy Framework",
                 rfc: "RFC 7208",
                 color: "emerald",
-                description: "SPF is a DNS TXT record that enumerates the IP addresses and mail server hostnames that are authorised to send email on behalf of a domain. When a receiving mail server (such as Gmail's MX infrastructure) accepts an inbound message claiming to originate from sendora.me, it performs a DNS lookup of our SPF record and verifies that the sending server's IP address is included in that record. If the IP is not listed, the message fails SPF — which, combined with our DMARC policy, causes Gmail to reject or quarantine the message before it reaches any inbox.",
+                description: "SPF is a DNS TXT record that enumerates the IP addresses and mail server hostnames that are authorised to send email on behalf of a domain. When a receiving mail server (such as Sendora's MX infrastructure) accepts an inbound message claiming to originate from sendora.me, it performs a DNS lookup of our SPF record and verifies that the sending server's IP address is included in that record. If the IP is not listed, the message fails SPF — which, combined with our DMARC policy, causes Sendora to reject or quarantine the message before it reaches any inbox.",
                 mechanism: [
                   "DNS TXT record at the apex domain",
                   "Enumerates authorised sending IP ranges",
@@ -232,7 +232,7 @@ export default function LearnMorePage() {
                 name: "DomainKeys Identified Mail",
                 rfc: "RFC 6376",
                 color: "sky",
-                description: "DKIM attaches a cryptographic signature to outgoing email headers using a private key held exclusively by Sendora's mail servers. The corresponding public key is published in DNS. When Gmail or any receiving mail server receives a Sendora-originated message, it retrieves our public key from DNS and uses it to verify the signature. If the signature is valid, the message is confirmed as genuinely originating from Sendora's infrastructure and unmodified in transit. We use RSA-2048 keys, rotated on a defined schedule, with dedicated selectors per mail-handling cluster for granular auditability.",
+                description: "DKIM attaches a cryptographic signature to outgoing email headers using a private key held exclusively by Sendora's mail servers. The corresponding public key is published in DNS. When Sendora or any receiving mail server receives a Sendora-originated message, it retrieves our public key from DNS and uses it to verify the signature. If the signature is valid, the message is confirmed as genuinely originating from Sendora's infrastructure and unmodified in transit. We use RSA-2048 keys, rotated on a defined schedule, with dedicated selectors per mail-handling cluster for granular auditability.",
                 mechanism: [
                   "RSA-2048 cryptographic signature on message headers",
                   "Private key held exclusively by Sendora MTA cluster",
@@ -246,7 +246,7 @@ export default function LearnMorePage() {
                 name: "Domain-based Message Authentication, Reporting & Conformance",
                 rfc: "RFC 7489",
                 color: "violet",
-                description: "DMARC is the policy layer that ties SPF and DKIM together and instructs receiving mail servers how to handle messages that fail authentication. Sendora's DMARC policy is set to p=reject — the most aggressive enforcement mode. This means that any message purporting to originate from a sendora.me address that fails both SPF and DKIM alignment will be unconditionally rejected by Gmail and all DMARC-compliant mail servers worldwide. We additionally configure rua and ruf URIs so that aggregate and forensic failure reports are sent to our postmaster team, enabling continuous monitoring of authentication failures and potential spoofing attempts.",
+                description: "DMARC is the policy layer that ties SPF and DKIM together and instructs receiving mail servers how to handle messages that fail authentication. Sendora's DMARC policy is set to p=reject — the most aggressive enforcement mode. This means that any message purporting to originate from a sendora.me address that fails both SPF and DKIM alignment will be unconditionally rejected by Sendora and all DMARC-compliant mail servers worldwide. We additionally configure rua and ruf URIs so that aggregate and forensic failure reports are sent to our postmaster team, enabling continuous monitoring of authentication failures and potential spoofing attempts.",
                 mechanism: [
                   "p=reject: failed messages are unconditionally rejected",
                   "Alignment mode: strict (aspf=s; adkim=s)",
@@ -328,7 +328,7 @@ export default function LearnMorePage() {
                   layer: "L2",
                   label: "TLS 1.3 / STARTTLS",
                   algo: "Transport Encryption (In-Transit)",
-                  desc: "All SMTP connections between external mail servers and Sendora's MX servers are encrypted using TLS 1.3 with ECDHE key exchange, providing forward secrecy by default. When a Gmail server delivers a message to sendora.me, the connection is upgraded to TLS via STARTTLS before any message data is transmitted. Cipher suites below AES-128-GCM or CHACHA20-POLY1305 are rejected. TLS 1.0 and 1.1 are disabled entirely. HSTS headers on webmail ensure browser connections are always encrypted.",
+                  desc: "All SMTP connections between external mail servers and Sendora's MX servers are encrypted using TLS 1.3 with ECDHE key exchange, providing forward secrecy by default. When a Sendora server delivers a message to sendora.me, the connection is upgraded to TLS via STARTTLS before any message data is transmitted. Cipher suites below AES-128-GCM or CHACHA20-POLY1305 are rejected. TLS 1.0 and 1.1 are disabled entirely. HSTS headers on webmail ensure browser connections are always encrypted.",
                   badge: "TLS 1.3 · PFS",
                   badgeColor: "text-sky-400 bg-sky-400/10 border-sky-400/25",
                 },
@@ -474,7 +474,7 @@ export default function LearnMorePage() {
             <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/25 mb-8">Email Trust Chain · Inbound Message Verification Flow</p>
             <div className="flex flex-col sm:flex-row items-stretch gap-0 overflow-x-auto">
               {[
-                { node: "Gmail MTA", sub: "Sender's server", color: "bg-[#4285f4]/15 border-[#4285f4]/25 text-[#4285f4]" },
+                { node: "Sendora MTA", sub: "Sender's server", color: "bg-[#4285f4]/15 border-[#4285f4]/25 text-[#4285f4]" },
                 { node: "DNS Lookup", sub: "SPF + DKIM + DMARC", color: "bg-amber-500/12 border-amber-500/25 text-amber-400" },
                 { node: "TLS 1.3 Handshake", sub: "STARTTLS + DANE", color: "bg-sky-500/12 border-sky-500/25 text-sky-400" },
                 { node: "MX Reception", sub: "mx1 / mx2.sendora.me", color: "bg-[#6d4aff]/15 border-[#6d4aff]/30 text-[#a78bff]" },
@@ -719,7 +719,7 @@ export default function LearnMorePage() {
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {[
-              { label: "BIMI", detail: "Brand Indicators for Message Identification — our verified logo appears in Gmail alongside authenticated messages from sendora.me", tag: "Active" },
+              { label: "BIMI", detail: "Brand Indicators for Message Identification — our verified logo appears in Sendora alongside authenticated messages from sendora.me", tag: "Active" },
               { label: "MTA-STS", detail: "RFC 8461 policy enforces TLS on all inbound SMTP. Downgrade attacks that strip STARTTLS are rejected at the policy level before any data is exchanged.", tag: "Enforced" },
               { label: "DANE / TLSA", detail: "DNS-Based Authentication of Named Entities pins our TLS certificate fingerprint in DNSSEC-signed DNS records, defeating certificate authority compromise attacks.", tag: "Active" },
               { label: "DNSSEC", detail: "All Sendora-managed DNS zones are signed with DNSSEC, preventing DNS cache poisoning and spoofed DNS responses from redirecting mail delivery.", tag: "Signed" },
@@ -756,11 +756,11 @@ export default function LearnMorePage() {
             {[
               {
                 q: "Is there a problem with the email I sent to a sendora.me address?",
-                a: "No. The 'Protected message' indicator does not indicate any problem with your message or your account. It is Gmail's way of communicating that the destination domain has strict authentication controls. Your message was accepted and delivered to the recipient's inbox.",
+                a: "No. The 'Protected message' indicator does not indicate any problem with your message or your account. It is Sendora's way of communicating that the destination domain has strict authentication controls. Your message was accepted and delivered to the recipient's inbox.",
               },
               {
-                q: "Why does my email show 'Signed-by: Unavailable' in the Gmail header?",
-                a: "The 'Signed-by' field in Gmail refers to the DKIM signing domain of the message — which reflects your own sending domain (gmail.com, in the case of Gmail users), not the recipient's domain. 'Unavailable' in some contexts may indicate that Gmail's UI is showing you the authentication status from the sender's perspective rather than the receiving infrastructure's. The Sendora-side DKIM authentication is evaluated by our own MX servers, which is separate from what Gmail displays in the outbound view.",
+                q: "Why does my email show 'Signed-by: Unavailable' in the Sendora header?",
+                a: "The 'Signed-by' field in Sendora refers to the DKIM signing domain of the message — which reflects your own sending domain (gmail.com, in the case of Sendora users), not the recipient's domain. 'Unavailable' in some contexts may indicate that Sendora's UI is showing you the authentication status from the sender's perspective rather than the receiving infrastructure's. The Sendora-side DKIM authentication is evaluated by our own MX servers, which is separate from what Sendora displays in the outbound view.",
               },
               {
                 q: "Does Sendora read my emails after they are delivered?",
@@ -772,7 +772,7 @@ export default function LearnMorePage() {
               },
               {
                 q: "Can I send emails to a sendora.me address from any email provider?",
-                a: "Yes. Sendora's MX servers accept inbound mail from all sending domains, subject to spam and abuse filtering. The authentication controls we implement do not restrict which senders can deliver to sendora.me addresses — they restrict who can impersonate sendora.me as a sender. There is no barrier to receiving mail from Gmail, Outlook, Yahoo, or any other provider.",
+                a: "Yes. Sendora's MX servers accept inbound mail from all sending domains, subject to spam and abuse filtering. The authentication controls we implement do not restrict which senders can deliver to sendora.me addresses — they restrict who can impersonate sendora.me as a sender. There is no barrier to receiving mail from Sendora, Outlook, Yahoo, or any other provider.",
               },
               {
                 q: "What happens if an email fails DMARC for my domain?",
