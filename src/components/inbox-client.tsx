@@ -2583,7 +2583,9 @@ export function InboxClient({
                           <span>Protected message</span>
                           <span className="text-[#a78bfa]">•</span>
                           <a
-                            href="#"
+                            href="/learn-more"
+                            target="_blank"
+                            rel="noopener noreferrer"
                             className="text-[#5b3dff] underline decoration-[#c4b5fd] underline-offset-2 hover:text-[#4c1d95]"
                           >
                             Learn more
